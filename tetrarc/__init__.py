@@ -20,14 +20,14 @@ async def on_app_start(app: rio.App) -> None:
         format='%(asctime)s %(message)s',
         datefmt="%H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)])
-    app.log = logging.getLogger('finchur')
+    app.log = logging.getLogger('tetrarc')
 
     # Create a persistence instance. This class hides the gritty details of
     # database interaction from the app.
 
     # This is wonky -- but not sure of a better way just yet to get info
     appcfg=app.default_attachments[0].cfg
-    app.name=appcfg.get('orgname','tetrarc') # Default to just finchur
+    app.name=appcfg.get('orgname','tetrarc') # Default to just tetrarc
     pers = persistence.Persistence(appcfg)
 
     # Now attach it to the session. This way, the persistence instance is
@@ -99,7 +99,7 @@ theme = theme.THEME
 
 # Create the Rio app
 app = rio.App(
-    name='finchur',
+    name='tetrarc',
     default_attachments=[data_models.MyUserData(),
                         data_models.UserSettings(auth_token='')
                          ],

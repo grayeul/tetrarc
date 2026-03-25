@@ -127,7 +127,7 @@ class LoginPage(rio.Component):
 
     def build(self) -> rio.Component:
         # Create a banner with the error message if there is one
-        self.log=logging.getLogger("finchur")
+        self.log=logging.getLogger("tetrarc")
         # Determine the layout based on the window width
         desktop_layout = self.session.window_width > 30
 
