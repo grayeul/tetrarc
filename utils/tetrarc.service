@@ -1,0 +1,19 @@
+# tetrarc.service
+[Unit]
+Description=A service for the tetrarc Web App
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/pyweb/tetrarc
+ExecStart=/opt/venv/riovenv/bin/python -m uvicorn --host 127.0.0.1 --port 11233 tetrarc.fastapi_run:fastapp
+Restart=always
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogFacility=local0
+User=brobison
+Group=brobison
+
+[Install]
+WantedBy=multi-user.target
+
