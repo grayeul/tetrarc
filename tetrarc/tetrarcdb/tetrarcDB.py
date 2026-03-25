@@ -13,7 +13,6 @@ import json
 import bcrypt
 import uuid
 import traceback
-import pandas as pd
 from sqlalchemy import create_engine, ForeignKey, UniqueConstraint, func
 from sqlalchemy import Integer, Float, String, Column, Date,DateTime, JSON, CheckConstraint
 from sqlalchemy import select, update, delete
