@@ -7,6 +7,7 @@ readme = "README.md"
 dependencies = [
    "rio-ui >= 0.12",
    "sqlalchemy >= 2.0.39",
+   "uvicorn >= 0.29.0"
 ]
 
 [tool.poetry]
@@ -14,9 +15,6 @@ requires-poetry = ">=2.0"
 include = [
   { path = "tetrarc/images/rockylogo48x48.png", format = ["sdist","wheel"] }
 ]
-
-[tool.poetry.scripts]
-run_tetrarc = {reference = "run_tetrarc.py", type="file"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
