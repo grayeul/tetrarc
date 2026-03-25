@@ -5,7 +5,7 @@ description = "A Web App for TEst TRAcking of Rocky Candidates"
 authors = [ {name = "grayeul", email = "grayeul@gmail.com"} ]
 readme = "README.md"
 dependencies = [
-   "rio-ui >= 0.11",
+   "rio-ui >= 0.12",
    "sqlalchemy >= 2.0.39",
 ]
 
