@@ -1,0 +1,26 @@
+[project]
+name = "tetrarc"
+version = "0.5.0"
+description = "A Web App for TEst TRAcking of Rocky Candidates"
+authors = [ {name = "grayeul", email = "grayeul@gmail.com"} ]
+readme = "README.md"
+dependencies = [
+   "rio-ui >= 0.11",
+   "sqlalchemy >= 2.0.39",
+]
+
+[tool.poetry]
+requires-poetry = ">=2.0"
+include = [
+  { path = "tetrarc/images/rockylogo48x48.png", format = ["sdist","wheel"] }
+]
+
+[tool.poetry.scripts]
+run_tetrarc = {reference = "run_tetrarc.py", type="file"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

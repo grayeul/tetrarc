@@ -1,0 +1,6 @@
+{
+   "dbfile":"tetrarc.db",
+   "loglevel":"DEBUG",
+   "dbpagesize":50,
+   "pagesize":10
+}
