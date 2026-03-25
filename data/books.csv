@@ -1,0 +1,7 @@
+#|test_books
+# A list of Test Books to load
+# format: Name, start_date,target_end_date,status,description
+RockyLinux-9.7,2025-11-11,2025-12-24, completed, Version 9.7 - more stuff here
+RockyLinux-10.1,2025-11-11,2025-12-24, completed, Version 10.1 -even more stuff for this one
+RockyLinux-10.2,2026-05-20,2026-06-15, not started, Version 10.2 - placeholder
+

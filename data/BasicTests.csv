@@ -1,0 +1,6 @@
+#|basic_tests
+# A list of BasicTests to load
+# format: Name, shortName, GroupID, Order, Description, Link
+#Boot ISO Image,BootISO, 1, 1, Boot and Install from ISO image using DVD or USB, https://testing.rocky.page/documentation/QA/Testcase_Boot_Methods_Boot_Iso
+#Media Consistency Verification,MediaCheck,1,2,Verifies installer's mechanism to verify install medium is intact, https://testing.rocky.page/documentation/QA/Testcase_Media_USB_dd
+No Broken Packages-Repoclosure,Repoclosure,2,1,Checks for critical errors,

@@ -1,0 +1,13 @@
+#|test_groups
+# A list of TestGroups to load
+# format: Name, description
+Community Testable Items, Self Explanatory
+Repository Checks, validates repo setup
+OpenQA Tests, checks various installer requirements
+Post-Installation Requirements, things to check after install
+Cloud Image Requirements, other image types
+Cloud Image Testing, tests on those images
+SIG/AltArch, Raspberry PI 4/5
+Sparky Testing, New tests
+Final Release, Last steps
+Operations, Announcements and etc

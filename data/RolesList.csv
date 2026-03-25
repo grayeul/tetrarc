@@ -1,0 +1,9 @@
+#|Roles
+# Initial Load of Roles
+# Format: name,description
+admin,Full Admin Privileges - can do anything
+tester,Can submit test reports
+viewer,Can see results - but not submit
+
+
+
