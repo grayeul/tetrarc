@@ -63,7 +63,7 @@ class PageLayout:
    device: t.Literal["desktop", "mobile"]
 
 @dataclass
-class MainSection:
+class SideBarTable:
     main_section_name: str
     icon: str
     target_url: str

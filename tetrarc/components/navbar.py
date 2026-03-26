@@ -56,6 +56,7 @@ class Navbar(rio.Component):
     def build(self) -> rio.Component:
         # Determine the layout based on the window width
         desktop_layout = self.session.window_width > 30
+        user_sess = self.session[data_models.UserSessionModel]
 
         try:
             # Which page is currently active? This will be used to highlight the
@@ -96,7 +97,7 @@ class Navbar(rio.Component):
         navbar_content.add(
             rio.Link(
                 rio.IconButton(
-                    "material/home",
+                    icon="material/home",
                     style="plain-text",
                     min_size=2.5,
                 ),
@@ -115,20 +116,21 @@ class Navbar(rio.Component):
             # make the buttons navigate to other pages, without
             # having to write an event handler. Notice how there is
             # no Python function called when the button is clicked.
-            navbar_content.add(
-                rio.Link(
-                    rio.Button(
-                        "Home",
-                        icon="material/news",
-                        style=(
-                            "major"
-                            if active_page_url_segment == "home"
-                            else "plain-text"
+            if 'admin' in user_sess.d['roles']:
+                navbar_content.add(
+                    rio.Link(
+                        rio.Button(
+                            "Admin",
+                            icon="material/shield_lock",
+                            style=(
+                                "major"
+                                if active_page_url_segment == "admin"
+                                else "plain-text"
+                            ),
                         ),
-                    ),
-                    "/app/home",
+                        "/app/admin",
+                    )
                 )
-            )
 
             # Same game, different button
             navbar_content.add(
