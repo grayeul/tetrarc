@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from dataclasses import KW_ONLY, field
+from datetime import datetime, timezone
 
 import rio
 
@@ -29,19 +30,27 @@ class Navbar(rio.Component):
         self.force_refresh()
 
     async def on_logout(self) -> None:
-        user_session = self.session[data_models.UserSession]
+        user_session = self.session[data_models.UserSessionModel]
 
-        # Delete the session from the database
+        # Expire the session
         pers = self.session[persistence.Persistence]
-        await pers.delete_session(user_session.id)
 
-        # Detach everything from the session. This informs all components that
-        # nobody is logged in.
+        await pers.update_session_duration(
+            user_session.d,
+            new_valid_until=datetime.now(tz=timezone.utc),
+            )
+        # And now -- actually delete the session from DB
+        #   (This may change later)
+        await pers.delete_user_session(user_session.d);
+
+        # Detach everything from the session
         self.session.detach(data_models.UserInfoModel)
-        self.session.detach(data_models.UserSession)
+        self.session.detach(data_models.UserSessionModel)
+        #self.session.detach(data_models.UserSettings)
+        #self.session.detach(data_models.PageLayout)
 
-        # Navigate to the login page to prevent the user being on a page that is
-        # prohibited without being logged in.
+        
+        # Navigate to login page to prevent the user being on a non-auth page
         self.session.navigate_to("/")
 
     def build(self) -> rio.Component:
