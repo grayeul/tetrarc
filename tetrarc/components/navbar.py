@@ -128,7 +128,7 @@ class Navbar(rio.Component):
                                 else "plain-text"
                             ),
                         ),
-                        "/app/admin",
+                        "/app/admin/BasicTests/0",
                     )
                 )
 

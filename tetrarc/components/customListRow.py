@@ -18,17 +18,20 @@ class CustomListRow(rio.Component):
 
     arch: str
     testdict:dict
+    editmode:bool = False
     hdr:bool = False
 
     def gotoAddResult(self,testid) -> None:
         self.session.navigate_to(f"/app/newresults-page/{self.arch}/{testid}")
+    def gotoEditResult(self,testid) -> None:
+        self.session.navigate_to(f"/app/admin/BasicTests/{testid}")
     def build(self) -> rio.Component:
         name=self.testdict["name"]
         try:
             testid=self.testdict["id"]
         except:
             testid=0
-            print(f"Building a row, with testdict={self.testdict}")
+            print(f"Building a row, with testdict={self.testdict} edit={self.editmode}")
         description=self.testdict["description"]
         user_sess = self.session[data_models.UserSessionModel]
         passes=self.testdict.get("passes",0)
@@ -38,24 +41,26 @@ class CustomListRow(rio.Component):
            style='heading3'
         else:
             style='text'
-        if 'admin' in user_sess.d['roles'] or 'tester' in user_sess.d['roles']:
-             addbtn=rio.Button("Submit",
-                               on_press=functools.partial(self.gotoAddResult,testid))
-             return rio.CustomListItem(
-               rio.Row(rio.Text(name,style=style),
-                       rio.Text(description,style=style),
-                       rio.Text(str(passes),style=style),
-                       rio.Text(str(fails),style=style),
-                       rio.Text('Submit New',style=style) if self.hdr else addbtn,
-                   proportions=[1,3,0.5,0.5,0.5])
-             )
+        addbtn=rio.Button("Submit",
+                          on_press=functools.partial(self.gotoAddResult,testid))
+        editbtn=rio.Button("Edit",
+                          on_press=functools.partial(self.gotoEditResult,testid))
+        baserow= rio.Row(rio.Text(name,style=style),
+                      rio.Text(description,style=style)
+                      )
+        if self.editmode:
+             baserow=baserow.add(rio.Text('Edit',style=style) if self.hdr else editbtn)
+             baserow.proportions=[1,3,0.5]
+        elif 'admin' in user_sess.d['roles'] or 'tester' in user_sess.d['roles']:
+             baserow=baserow.add(rio.Text(str(passes),style=style))
+             baserow=baserow.add(rio.Text(str(fails),style=style))
+             baserow=baserow.add(rio.Text('Submit New',style=style) if self.hdr else addbtn)
+             baserow.proportions=[1,3,0.5,0.5,0.5]
         else:
-             return rio.CustomListItem(
-               rio.Row(rio.Text(name,style=style),
-                       rio.Text(description,style=style),
-                       rio.Text(str(passes),style=style),
-                       rio.Text(str(fails),style=style),
-                   proportions=[1,3,1,1])
-             )
+             baserow=baserow.add(rio.Text(str(passes),style=style))
+             baserow=baserow.add(rio.Text(str(fails),style=style))
+             baserow.proportions=[1,3,1,1]
+             
+        return rio.CustomListItem( baserow )
         
 

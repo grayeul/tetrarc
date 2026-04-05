@@ -95,14 +95,24 @@ class SideBar(rio.Component):
         """
         # Retrieve the current active page's URL segment
         active_url_segment = self.session.active_page_url.path
+        #print(f"Now in desktop build, and active page is: {self.session.active_page_url.name}")
+        #print(f"Now in desktop build, and active path is: {self.session.active_page_url.path}")
 
         # Create a column to hold the main sections
         content = rio.Column(spacing=1)
+        uim=self.session[data_models.UserInfoModel]
 
         # Add each major section to the sidebar, highlighting the active section
         for section in constants.SIDEBAR_TABLES:
             if not self.checkRoleValid(section.required_roles):
                 continue
+            if section.target_url == "{LastBook}":
+                try:
+                   linkurl=f"/app/book/{uim.d['book']}"
+                except:
+                   linkurl="/app/home"
+            else:
+                linkurl=section.target_url
             content.add(
                 # Link the section to the corresponding page
                 rio.Link(
@@ -110,7 +120,7 @@ class SideBar(rio.Component):
                         main_section=section,  # Section data (e.g., name and icon)
                         is_active=section.target_url == active_url_segment,
                     ),
-                    section.target_url,
+                    linkurl,
                     open_in_new_tab=False,
                 ),
             )

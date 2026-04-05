@@ -1,4 +1,4 @@
-#@file: admin_page.py
+#@file: admin.py
 #@brief: Constructs page for admin tasks
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ class AdminPage(rio.Component):
 
     def build(self) -> rio.Component:
         return rio.Column(
-            rio.Text("TopRecent News", style="heading1"),
+            rio.Text("Admin Table Editing", style="heading2"),
             comps.SideComponent(),
             spacing=2,
             min_width=60,

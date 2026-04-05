@@ -8,7 +8,7 @@ import typing as t
 
 import rio
 
-from ... import components as comps
+from .... import components as comps
 
 @rio.page(
     name="TestBooksPage",

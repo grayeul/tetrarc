@@ -9,7 +9,7 @@ import typing as t
 import rio
 
 from ... import components as comps
-from ... import persistence
+from ... import data_models,persistence
 # Note - this shows up under URL:  app/book/book_name
 @rio.page(
     name="TestBookPage",
@@ -23,6 +23,8 @@ class BookPage(rio.Component):
     arch: str = "x86_64"
     def build(self) -> rio.Component:
         pers=self.session[persistence.Persistence]
+        uim=self.session[data_models.UserInfoModel]
+        uim.d['book']=self.book_name
         self.log=pers.log
         groups=pers.db.getTestGroups()
         colOfCards=[
