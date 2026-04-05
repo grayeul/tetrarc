@@ -505,6 +505,16 @@ class tetrarcDB:
             if s1:
                rval=s1[0].id
         return rval
+    def getTestGroups(self) -> list[dict]:
+        rval=[]
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        with Session() as sess:
+            statement = select(TestGroups)
+            s1 = sess.scalars(statement).all()
+            if s1:
+               rval=[ x.toDict() for x in s1]
+        return rval
     def getTestsForGroup(self,testgroup) -> list[dict]:
         rval=[{"name":"onetest","description":"This is test 1"},
               {"name":"test#2","description":"this is number 2"}]
@@ -519,6 +529,16 @@ class tetrarcDB:
             #s1=eval(f"sess.query(BasicTests).all()")
             if s1:
                rval=[x.toDict() for x in s1]
+        return rval
+    def getBasicTest(self,testid:int) -> dict:
+        rval={}
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        with Session() as sess:
+            statement = select(BasicTests).filter_by(id=testid)
+            s1 = sess.scalars(statement).first()
+            if s1:
+               rval=s1.toDict()
         return rval
     def getUserRolesById(self,user_id:int) -> list[str]:
         "Looks up a user by id, and returns a list of roles that user has"
