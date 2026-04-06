@@ -495,6 +495,16 @@ class tetrarcDB:
                rval=s1.toDict()
         return rval
         
+    def getGroupById(self,grpid) -> str:
+        rval=0
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        with Session() as sess:
+            statement = select(TestGroups).filter_by(id=grpid)
+            s1 = sess.scalars(statement).all()
+            if s1:
+               rval=s1[0].name
+        return rval
     def getGroupId(self,testgroup) -> int:
         rval=0
         Session=sessionmaker()
@@ -540,6 +550,74 @@ class tetrarcDB:
             if s1:
                rval=s1.toDict()
         return rval
+    def addNewBasicTest(self,bt:dict) -> None:
+        "takes dict of fields and creates new entry in the DB to match"
+        try:
+           Session=sessionmaker()
+           Session.configure(bind=self.engine)
+           with Session() as sess:
+                newTest = BasicTests(name=bt['name'],
+                                     shortname=bt['shortname'],
+                                     test_group_id=int(bt['test_group_id']),
+                                     testorder=int(bt['testorder']),
+                                     description=bt['description'],
+                                     created_by=bt['last_modified_by'],
+                                     last_modified_by=bt['last_modified_by'])
+                if bt.get('link_to_procedure',None):
+                      newTest.link_to_procedure=bt['link_to_procedure']
+                if bt.get('notes',None):
+                      newTest.notes=bt['notes']
+                print(f"Trying to commit new dict: {newTest.toDict()}")
+                sess.add(newTest)
+                sess.commit()
+        except:
+           self.log.exception("Got exception in addNewBasicTest ",exc_info=True)
+
+    def updateBasicTest(self,testid: int,testChanges:dict) -> None:
+        "Takes an id for the test, and dict of changed fields and updates the entries in the DB to match"
+        try:
+           Session=sessionmaker()
+           Session.configure(bind=self.engine)
+           with Session() as sess:
+                s1 = sess.execute(select(BasicTests).where(BasicTests.id==testid)).first()
+                if s1 and len(s1) == 1:
+                   dbTest=s1[0]
+                   xname=testChanges.get('name',None)
+                   if xname: dbTest.name = xname
+                   xdesc=testChanges.get('description',None)
+                   if xdesc: dbTest.description = xdesc
+                   xshort=testChanges.get('shortname',None)
+                   if xshort: dbTest.shortname = xshort
+                   xtestgrp_id=testChanges.get('test_group_id',None)
+                   if xtestgrp_id: dbTest.test_group_id = xtestgrp_id
+                   xtestorder=testChanges.get('testorder',None)
+                   if xtestorder: dbTest.testorder = xtestorder
+                   xlastmodby=testChanges.get('last_modified_by',None)
+                   if xlastmodby: dbTest.last_modified_by = xlastmodby
+                   xlink=testChanges.get('link_to_procedure',None)
+                   if xlink:      dbTest.link_to_procedure = xlink
+                   xnotes=testChanges.get('notes',None)
+                   if xnotes:     dbTest.notes = xnotes
+                   dbTest.last_modified = datetime.now()
+                   print(f"Trying to commit this dict: {dbTest.toDict()}")
+                   sess.add(dbTest)
+                   sess.commit()
+        except:
+           self.log.exception("Got exception in updateBasicTest ",exc_info=True)
+
+
+    def deleteBasicTest(self,testid: int) -> None:
+        "Delete BasicTest with given id"
+        if testid < 1:
+            print(f"Unable to delete tests with id < 1")
+            return
+        dtest=self.getBasicTestById(testid)
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        with Session() as sess:
+            sess.execute(delete(BasicTests).where(BasicTests.id==testid))
+            sess.commit()
+        print(f"Have deleted test with ID={testid}: {dtest}")
     def getUserRolesById(self,user_id:int) -> list[str]:
         "Looks up a user by id, and returns a list of roles that user has"
         Session=sessionmaker()

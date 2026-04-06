@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, field
+from datetime import datetime
 import typing as t
+import functools
 
 import rio
 
@@ -23,70 +25,142 @@ class BasicTestsPage(rio.Component):
     groupName: str = "First Group"
     testgroups: list[dict] = []
     active_testid: int = 0
-    curTest: dict = {}
+    curTest: dict|None = None
     t_link: str = ""
+    confdel_is_open: bool = False
+
+    def addNewTest(self):
+        pers=self.session[persistence.Persistence]
+        user_sess=self.session[dm.UserSessionModel]
+        myuid=user_sess.d['user_id']
+        print(f"Adding a new test and my user_id is: {myuid}")
+        self.active_testid = -1
+        self.curTest={
+           "name":" ",
+           "description":" ",
+           "shortname":" ",
+           "testorder":1,
+           "link_to_procedure":" ",
+           "notes":"",
+           "created":datetime.now(),
+           "created_by":myuid,
+           "last_modified":datetime.now(),
+           "last_modified_by":myuid,
+           "test_group_id": pers.db.getGroupId(self.groupName)
+        }
+        self.changes=self.curTest.copy()
+
+    def lostfocus(self,ctype:str,event:Event):
+        print(f"Ctype: {ctype}, event: {event}")
+        oldval=self.curTest.get(ctype,event.text)
+        if oldval != event.text:
+             print(f"See change from: {oldval} to {event.text}")
+             self.changes[ctype]=event.text
+        else:
+            print(f"No changes for {ctype}")
+    def cancelEdits(self):
+        pers=self.session[persistence.Persistence]
+        print("Cancelling in-progress edits")
+        self.groupName = pers.db.getGroupById(self.curTest['test_group_id'])
+        if self.active_testid < 0:
+            self.session.navigate_to("/app/admin/BasicTests/0")
+        else:
+            self.force_refresh()
+    def saveEdits(self):
+        pers=self.session[persistence.Persistence]
+        user_sess=self.session[dm.UserSessionModel]
+        grpid=pers.db.getGroupId(self.groupName)
+        #self.changes=self.curTest.copy()
+        self.changes['last_modified'] = datetime.now()
+        self.changes['last_modified_by'] = user_sess.d['user_id']
+        self.changes['test_group_id'] = grpid
+        print("Saving in-progress edits")
+        print(f"Changes are: {self.changes}")
+        if self.active_testid < 0:
+            pers.db.addNewBasicTest(self.changes)
+        else:
+            pers.db.updateBasicTest(self.active_testid,self.changes)
+        self.session.navigate_to("/app/admin/BasicTests/0")
+    def deleteTest(self):
+        print(f"Preparing to delete test id: {self.active_testid}")
+        pers=self.session[persistence.Persistence]
+        self.confdel_is_open = False
+        pers.db.deleteBasicTest(self.active_testid)
+        self.session.navigate_to("/app/admin/BasicTests/0")
+
+    def confirmDelPress(self):
+        self.confdel_is_open = not self.confdel_is_open
 
     def build(self) -> rio.Component:
         pers=self.session[persistence.Persistence]
+        self.changes={}
+        if self.active_testid == "new":
+            self.addNewTest()
         if self.active_testid == 0:
-            curTest=None
+            carTest=None
         else:
-            curTest=pers.db.getBasicTest(self.active_testid)
-            print(f"Found BasicTest{self.active_testid}: {curTest}")
+            carTest=pers.db.getBasicTest(self.active_testid)
+            print(f"Found BasicTest{self.active_testid}: {carTest}")
         TopRow=rio.Column(
             rio.Row(
                 rio.Dropdown(label="TestGroup",
-                   #options={"First Group":0,"Second Group":1,"Third Group":2},
                    options={x['name']:x['name'] 
                          for x in self.testgroups} 
                             if len(self.testgroups)>0 
                             else {"Tmp":"Tmp"},
-                   #selected_value=mygrp),
                    selected_value=self.bind().groupName),
                 rio.Spacer()
             ))
-        if curTest is None:
+        if self.curTest is None:
             TopRow=TopRow.add(
                 rio.Row(
                 rio.Spacer(),
-                rio.Button("Add New Test"),
+                rio.Button("Add New Test",on_press=self.addNewTest),
                 margin=0.5)
              )
         else:
             TopRow=TopRow.add(
                 rio.Row(
-                rio.Text("Test: "),
-                rio.Text(curTest['name']),
                 rio.Spacer(),
-                rio.Button("Add New Test"),
+                rio.Button("Add New Test",on_press=self.addNewTest),
                 margin=0.5)
             )
-        if curTest is None:
+        if self.curTest is None:
            formgrid=rio.Text("")
         else:
-            t_name=curTest['name']
-            t_shortname=curTest['shortname']
-            t_testorder=str(curTest['testorder'])
-            t_description=curTest['description']
-            #t_link=curTest['link_to_procedure']
-            t_created=curTest['created'].strftime("%c")
-            t_created_by=pers.db.getUserById(curTest['created_by']).get('username','unknown')
-            t_last_modified=curTest['last_modified'].strftime("%c")
-            t_last_modified_by=pers.db.getUserById(curTest['last_modified_by']).get('username','unknown')
+            print(f"In build, my curTest is: {self.curTest}")
+            t_name=self.curTest['name']
+            t_shortname=self.curTest['shortname']
+            t_testorder=str(self.curTest['testorder'])
+            t_description=self.curTest['description']
+            t_link=self.curTest['link_to_procedure']
+            t_created=self.curTest['created'].strftime("%c")
+            t_created_by=pers.db.getUserById(self.curTest['created_by']).get('username','unknown')
+            t_last_modified=self.curTest['last_modified'].strftime("%c")
+            t_last_modified_by=pers.db.getUserById(self.curTest['last_modified_by']).get('username','unknown')
 
             formgrid=rio.Grid(row_spacing=1,column_spacing=1)
             rx=0;cx=0
-            formgrid.add(rio.TextInput(t_name,label="name"),row=rx,column=cx)
+            formgrid.add(rio.TextInput(t_name,label="name",
+                    on_lose_focus=functools.partial(self.lostfocus,'name')),
+                    row=rx,column=cx)
             cx+=1
-            formgrid.add(rio.MultiLineTextInput(t_description,label="description"),
-                row=rx,column=cx,height=2)
+            formgrid.add(rio.MultiLineTextInput(t_description,label="description",
+                    on_lose_focus=functools.partial(self.lostfocus,'description')),
+                    row=rx,column=cx,height=2)
             cx=0
             rx+=1
-            formgrid.add(rio.TextInput(t_shortname,label="shortname"),row=rx,column=cx)
+            formgrid.add(rio.TextInput(t_shortname,label="shortname",
+                    on_lose_focus=functools.partial(self.lostfocus,'shortname')),
+                    row=rx,column=cx)
             rx+=1
-            formgrid.add(rio.TextInput(t_testorder,label="testorder"),row=rx,column=cx)
+            formgrid.add(rio.TextInput(t_testorder,label="testorder",
+                    on_lose_focus=functools.partial(self.lostfocus,'testorder')),
+                     row=rx,column=cx)
             cx+=1
-            formgrid.add(rio.TextInput(self.bind().t_link,label="link"),row=rx,column=cx)
+            formgrid.add(rio.TextInput(t_link,label="link",
+                    on_lose_focus=functools.partial(self.lostfocus,'link_to_procedure')),
+                     row=rx,column=cx)
             rx+=1
             cx=0
             formgrid.add(rio.TextInput(t_created_by,label="created_by",is_sensitive=False),
@@ -101,10 +175,23 @@ class BasicTestsPage(rio.Component):
             cx+=1
             formgrid.add(rio.TextInput(t_last_modified,label="last_modified",is_sensitive=False),
                   row=rx,column=cx)
+        haveDelete=True if self.active_testid>0 else False
+        confirmDel=rio.Popup(
+              anchor=rio.Button("Delete Test",on_press=self.confirmDelPress,
+                                 margin=1,is_sensitive=haveDelete),
+              content=rio.Card(rio.Column(
+                   rio.Text("Are you sure you want to delete?"),
+                   rio.Row(rio.Button("Yes",on_press=self.deleteTest),
+                           rio.Button("No",on_press=self.confirmDelPress)) ),
+                   min_width=10,min_height=2),
+               modal=True,
+               is_open=self.confdel_is_open,
+               position="top")
         buttonBar=rio.Row(
+            confirmDel, 
             rio.Spacer(),
-            rio.Button("Save",margin=1),
-            rio.Button("Cancel",margin=1),
+            rio.Button("Save",on_press=self.saveEdits,margin=1),
+            rio.Button("Cancel",on_press=self.cancelEdits,margin=1),
             )
         return rio.Column(
             rio.Card(
@@ -155,6 +242,6 @@ class BasicTestsPage(rio.Component):
                 if self.testgroups[ix]['id']==grpid:
                     mygrp=self.testgroups[ix]['name']
                     break
-            self.t_link=self.curTest['link_to_procedure']
+            #self.t_link=self.curTest['link_to_procedure']
         self.groupName=mygrp
 
