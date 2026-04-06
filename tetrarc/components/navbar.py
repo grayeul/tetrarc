@@ -56,7 +56,6 @@ class Navbar(rio.Component):
     def build(self) -> rio.Component:
         # Determine the layout based on the window width
         desktop_layout = self.session.window_width > 30
-        user_sess = self.session[data_models.UserSessionModel]
 
         try:
             # Which page is currently active? This will be used to highlight the
@@ -112,10 +111,12 @@ class Navbar(rio.Component):
 
         # Based on the user's status, display the appropriate buttons
         if user_settings:
+            user_sess = self.session[data_models.UserSessionModel]
             # By sticking buttons into a `rio.Link`, we can easily
             # make the buttons navigate to other pages, without
             # having to write an event handler. Notice how there is
             # no Python function called when the button is clicked.
+            print(f"Checking for admin in roles list: {user_sess.d['roles']}")
             if 'admin' in user_sess.d['roles']:
                 navbar_content.add(
                     rio.Link(
