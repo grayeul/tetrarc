@@ -18,6 +18,9 @@ import rio
 class UserInfoModel:
     def __init__(self,d):
         self.d=d
+        # Add default arch, and deploy_type (kept/tracked during session
+        self.d['arch']='x86_64'
+        self.d['deploy_type']='VM'
 
 @dataclass
 class UserSessionModel:

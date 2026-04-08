@@ -21,6 +21,18 @@ class BookPage(rio.Component):
     """
     book_name: str
     arch: str = "x86_64"
+
+    def changeArch(self,event):
+        uim=self.session[data_models.UserInfoModel]
+        print(f"Changing arch to => {event}")
+        uim.d['arch']=event.value
+
+    @rio.event.on_populate
+    def on_populate(self) -> None:
+        # Update based on session info
+        uim=self.session[data_models.UserInfoModel]
+        self.arch=uim.d['arch']
+        
     def build(self) -> rio.Component:
         pers=self.session[persistence.Persistence]
         uim=self.session[data_models.UserInfoModel]
@@ -52,12 +64,16 @@ class BookPage(rio.Component):
         return rio.Column(
             rio.Text(self.book_name, style="heading1"),
             rio.Text("Basic Tests to be performed", style="heading3"),
-            rio.Dropdown(label="arch",
+            rio.Row(
+                rio.Dropdown(label="arch",
                          options={"x86_64":"x86_64",
                                   "aarch64":"aarch64",
                                   "ppc64le":"ppc64le",
                                   "s390x":"s390x"},
-                          selected_value=self.bind().arch),
+                          selected_value=self.bind().arch,
+                          on_change=self.changeArch),
+                   rio.Spacer()
+                   ),
             rio.Column(*colOfCards),
             # Now params for the column:
             spacing=0,

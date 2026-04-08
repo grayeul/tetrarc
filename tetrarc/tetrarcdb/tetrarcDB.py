@@ -199,16 +199,19 @@ class TestTypes(Base):
 #################################################################
 class TestResults(Base):
     __tablename__='test_results'
-    fields='id,test_type_id,user_id,status,submitted,comments'
+    fields='id,basic_tests_id,test_book,user_id,arch,deploy_type,status,submitted,comments'
     field_list=fields.split(',')
     id:              Mapped[int] = mapped_column(primary_key=True)
-    test_type_id:   Mapped[int] = mapped_column(ForeignKey('test_types.id'),nullable=False)
-    user_id:         Mapped[int] = mapped_column(ForeignKey('users.id'),nullable=False)
-    status:          Mapped[str]  = mapped_column(nullable=False,index=True)
+    basic_tests_id:  Mapped[int] = mapped_column(ForeignKey('basic_tests.id'),nullable=False,index=True)
+    test_book:       Mapped[str] = mapped_column(nullable=False,index=True)
+    user_id:         Mapped[int] = mapped_column(ForeignKey('users.id'),nullable=False,index=True)
+    arch:            Mapped[str] = mapped_column(nullable=False,index=True)
+    deploy_type:     Mapped[str] = mapped_column(nullable=False,default="VM")
+    status:          Mapped[str] = mapped_column(nullable=False,index=True)
     submitted:       Mapped[datetime] = mapped_column(default=func.now(),index=True)
     comments:        Mapped[str]  = mapped_column(nullable=True)
     # Note that unfortunately, sqlite won't detect unique constraint violation if any of these fields are NULL :(
-    __table_args__=(UniqueConstraint('test_type_id','user_id','submitted',name='uniqResults'),
+    __table_args__=(UniqueConstraint('basic_tests_id','test_book','arch','deploy_type','user_id','submitted',name='uniqResults'),
                     CheckConstraint(status.in_(_gStatusList),name='status_check'))
 
     def merge_from(self,other):
@@ -469,22 +472,27 @@ class tetrarcDB:
             sess.commit()
         return rval
 
-    def getAllTableEntries(self,TableName:str) -> list[str]:
+    def getAllTableEntries(self,TableName:str,orderby:str=None) -> list[str]:
         Session=sessionmaker()
         Session.configure(bind=self.engine)
         rval=None
         self.log.info(f"Trying to get All {TableName} entries")
         with Session() as sess:
-            s1=eval(f"sess.query({TableName}).all()")
+            if orderby:
+                stmt=eval(f"select({TableName}).order_by({TableName}.{orderby})")
+            else:
+                stmt=eval(f"select({TableName})")
+            #s1=eval(f"sess.query({TableName}).all()")
+            s1=eval(f"sess.execute(stmt).scalars().all()")
             if s1:
                rval=[x.toDict() for x in s1]
         return rval
     def getTestBooks(self) -> list[str]:
-        return self.getAllTableEntries('TestBooks')
+        return self.getAllTableEntries('TestBooks',orderby='name')
     def getTestGroups(self) -> list[str]:
-        return self.getAllTableEntries('TestGroups')
+        return self.getAllTableEntries('TestGroups',orderby='num')
     def getBasicTests(self) -> list[str]:
-        return self.getAllTableEntries('BasicTests')
+        return self.getAllTableEntries('BasicTests',orderby='testorder')
     def getBasicTestById(self,id) -> dict:
         Session=sessionmaker()
         Session.configure(bind=self.engine)
@@ -534,7 +542,7 @@ class tetrarcDB:
         Session.configure(bind=self.engine)
         self.log.info(f"Retrieving tests for group {testgroup}")
         with Session() as sess:
-            statement = select(BasicTests).filter_by(test_group_id=tgid)
+            statement = select(BasicTests).order_by(BasicTests.testorder).filter_by(test_group_id=tgid)
             s1 = sess.scalars(statement).all()
             #s1=eval(f"sess.query(BasicTests).all()")
             if s1:
@@ -618,6 +626,58 @@ class tetrarcDB:
             sess.execute(delete(BasicTests).where(BasicTests.id==testid))
             sess.commit()
         print(f"Have deleted test with ID={testid}: {dtest}")
+    def addTestResult(self,result:dict) -> None:
+        "takes dict of fields and creates new entry in the DB to match"
+        try:
+           Session=sessionmaker()
+           Session.configure(bind=self.engine)
+           with Session() as sess:
+                newResult = TestResults(basic_tests_id=result['basic_tests_id'],
+                                     user_id=result['user_id'],
+                                     test_book=result['book'],
+                                     arch=result['arch'],
+                                     deploy_type=result['deploy_type'],
+                                     status=result['status'],
+                                     comments=result['comments'])
+                print(f"Trying to commit new dict: {newResult.toDict()}")
+                sess.add(newResult)
+                sess.commit()
+        except:
+           self.log.exception("Got exception in addTestResult ",exc_info=True)
+
+    def getTestPassCnt(self,testid:int,book:str,arch:str) -> int:
+        "Search TestResults table and provide appropriate count"
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        cnt=0
+        with Session() as sess:
+            stmt= (   select(func.count(TestResults.id))
+                      .where(TestResults.test_book == book)
+                      .where(TestResults.basic_tests_id == testid)
+                      .where(TestResults.arch == arch)
+                      .where(TestResults.status == "pass")
+                  )
+            cnt=sess.scalar(stmt)
+        print(f"Found {cnt} passing tests for {book}/{arch}/test={testid}")
+        return cnt
+    def getTestFailCnt(self,testid:int,book:str,arch:str) -> int:
+        "Search TestResults table and provide appropriate count"
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        cnt=0
+        with Session() as sess:
+            stmt= (   select(func.count(TestResults.id))
+                      .where(TestResults.test_book == book)
+                      .where(TestResults.basic_tests_id == testid)
+                      .where(TestResults.arch == arch)
+                      .where(TestResults.status == "fail")
+                  )
+            cnt=sess.scalar(stmt)
+        print(f"Found {cnt} failing tests for {book}/{arch}/test={testid}")
+        return cnt
+    def getTestPartialCnt(self,testid:int) -> int:
+        "Search TestResults table and provide appropriate count"
+        return 0
     def getUserRolesById(self,user_id:int) -> list[str]:
         "Looks up a user by id, and returns a list of roles that user has"
         Session=sessionmaker()

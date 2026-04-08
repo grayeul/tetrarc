@@ -93,6 +93,9 @@ class BasicTestsPage(rio.Component):
 
     def build(self) -> rio.Component:
         pers=self.session[persistence.Persistence]
+        uim=self.session[dm.UserInfoModel]
+        #if uim.d.get('curgroup',None):
+        #    self.groupName=uim.d['curgroup']
         self.changes={}
         if self.active_testid == "new":
             self.addNewTest()
@@ -134,6 +137,8 @@ class BasicTestsPage(rio.Component):
             t_testorder=str(self.curTest['testorder'])
             t_description=self.curTest['description']
             t_link=self.curTest['link_to_procedure']
+            if t_link is None:
+                t_link=' '
             t_created=self.curTest['created'].strftime("%c")
             t_created_by=pers.db.getUserById(self.curTest['created_by']).get('username','unknown')
             t_last_modified=self.curTest['last_modified'].strftime("%c")
@@ -224,15 +229,21 @@ class BasicTestsPage(rio.Component):
         """
         # MyUserData should be available from __init__.py
         #mud=self.session[dm.MyUserData]
-        #uim=self.session[dm.UserInfoModel]
+        uim=self.session[dm.UserInfoModel]
         pers=self.session[persistence.Persistence]
         self.testgroups = pers.db.getTestGroups()
+        if uim.d.get('curgroup',None) is None:
+            if len(self.testgroups) > 0:
+                uim.d['curgroup']=self.testgroups[0]['name']
+            else:
+                uim.d['curgroup']='Empty'
+        #sess.add(uim)
+        print(f"Now in on_populate uim.d is: {uim.d}")
+        print(f"and uim.d.get => {uim.d.get('curgroup',None)}")
         self.testgroupNames=[x['name'] for x in self.testgroups]
         print(f"My active_testid is: {self.active_testid}")
         print(f"GroupNames: {self.testgroupNames}")
-        mygrp="Empty"
-        if len(self.testgroups) > 0:
-            mygrp=self.testgroups[0]['name']
+        self.groupName=uim.d['curgroup']
         if self.active_testid == 0:
             self.curTest=None
         else:
@@ -241,7 +252,8 @@ class BasicTestsPage(rio.Component):
             for ix in range(0,len(self.testgroups)):
                 if self.testgroups[ix]['id']==grpid:
                     mygrp=self.testgroups[ix]['name']
+                    self.groupName=mygrp
                     break
             #self.t_link=self.curTest['link_to_procedure']
-        self.groupName=mygrp
+        #self.groupName=mygrp
 

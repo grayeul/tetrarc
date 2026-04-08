@@ -22,11 +22,13 @@ class CustomListRow(rio.Component):
     hdr:bool = False
 
     def gotoAddResult(self,testid) -> None:
-        self.session.navigate_to(f"/app/newresults-page/{self.arch}/{testid}")
+        uim=self.session[data_models.UserInfoModel]
+        book=uim.d['book']
+        self.session.navigate_to(f"/app/newresults-page/{book}/{testid}")
     def gotoEditResult(self,testid) -> None:
         self.session.navigate_to(f"/app/admin/BasicTests/{testid}")
     def build(self) -> rio.Component:
-        name=self.testdict["name"]
+        name=self.testdict["shortname"]
         try:
             testid=self.testdict["id"]
         except:
@@ -34,20 +36,35 @@ class CustomListRow(rio.Component):
             print(f"Building a row, with testdict={self.testdict} edit={self.editmode}")
         description=self.testdict["description"]
         user_sess = self.session[data_models.UserSessionModel]
+        if testid == 6:
+            print(f"Dict for test6: {self.testdict}")
         passes=self.testdict.get("passes",0)
         fails=self.testdict.get("fails",0)
+        if testid == 6:
+            print(f"And now have: {passes} / {fails}")
         #return rio.SimpleListItem(text=name,key=name)
         if self.hdr:
            style='heading3'
         else:
             style='text'
-        addbtn=rio.Button("Submit",
-                          on_press=functools.partial(self.gotoAddResult,testid))
-        editbtn=rio.Button("Edit",
-                          on_press=functools.partial(self.gotoEditResult,testid))
-        baserow= rio.Row(rio.Text(name,style=style),
-                      rio.Text(description,style=style)
-                      )
+        addbtn=rio.Column(rio.Spacer(),
+                          rio.Button("Submit",
+                             on_press=functools.partial(self.gotoAddResult,testid))
+                         )
+        #editbtn=rio.Button("Edit",
+        #                  on_press=functools.partial(self.gotoEditResult,testid))
+        editbtn=rio.Column(rio.Spacer(),
+                          rio.Button("Edit",
+                             on_press=functools.partial(self.gotoEditResult,testid))
+                          )
+        if self.hdr:
+            baserow= rio.Row(rio.Text(name,style=style),
+                          rio.Text(description,style=style)
+                          )
+        else:
+            baserow= rio.Row(rio.Text(name,style=style),
+                          rio.Markdown(description,align_x=0,min_width=40)
+                          )
         if self.editmode:
              baserow=baserow.add(rio.Text('Edit',style=style) if self.hdr else editbtn)
              baserow.proportions=[1,3,0.5]
