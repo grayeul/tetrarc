@@ -75,11 +75,19 @@ class Navbar(rio.Component):
         # Check if the user is logged in and display the appropriate buttons
         # based on the user's status
         try:
-            self.session[data_models.UserInfoModel]
+            uim = self.session[data_models.UserInfoModel]
+            lastbook=uim.d.get('book',None)
+            if lastbook:
+                lastbookurl=f"/app/book/{lastbook}"
+            else:
+                lastbookurl="/app/home"
+            print(f"Setting button to {lastbookurl}")
 
         # If no user is attached, nobody is logged in
-        except KeyError:
+        #except KeyError:
+        except:
             user_settings = False
+            lastbookurl="/app/home"
 
         # If a user is attached, they are logged in
         else:
@@ -109,6 +117,7 @@ class Navbar(rio.Component):
         # right.
         navbar_content.add(rio.Spacer())
 
+        #print(f"page instances: {self.session.active_page_instances}")
         # Based on the user's status, display the appropriate buttons
         if user_settings:
             user_sess = self.session[data_models.UserSessionModel]
@@ -117,6 +126,7 @@ class Navbar(rio.Component):
             # having to write an event handler. Notice how there is
             # no Python function called when the button is clicked.
             print(f"Checking for admin in roles list: {user_sess.d['roles']}")
+            print(f"Curr url_seg: {active_page_url_segment} - lastbook: {lastbookurl}")
             if 'admin' in user_sess.d['roles']:
                 navbar_content.add(
                     rio.Link(
@@ -129,7 +139,9 @@ class Navbar(rio.Component):
                                 else "plain-text"
                             ),
                         ),
-                        "/app/admin/BasicTests/0",
+                        lastbookurl
+                        if active_page_url_segment == "admin"
+                        else "/app/admin/BasicTests/0",
                     )
                 )
 
