@@ -15,7 +15,7 @@ import uuid
 import traceback
 from operator import itemgetter
 from sqlalchemy import create_engine, ForeignKey, UniqueConstraint, func
-from sqlalchemy import Integer, Float, String, Column, Date,DateTime, JSON, CheckConstraint
+from sqlalchemy import Integer, Float, String, Boolean, Column, Date,DateTime, JSON, CheckConstraint
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import Mapped, relationship, DeclarativeBase, mapped_column
 from sqlalchemy import __version__ as sqlalchemyVers
@@ -128,7 +128,7 @@ class UserRoles(Base):
 class BasicTests(Base):
     __tablename__='basic_tests'
     __table_args__=(UniqueConstraint('name',name='uniqName'),UniqueConstraint('shortname',name='uniqShortName'),)
-    fields='id,name,shortname,test_group_id,testorder,description,created,created_by,'
+    fields='id,name,shortname,test_group_id,testorder,description,blocking,created,created_by,'
     fields+='last_modified,last_modified_by,link_to_procedure,notes'
     field_list=fields.split(',')
     id:               Mapped[int] = mapped_column(primary_key=True)
@@ -137,6 +137,7 @@ class BasicTests(Base):
     test_group_id:   Mapped[int] = mapped_column(ForeignKey('test_groups.id'),nullable=False)
     testorder:        Mapped[int] = mapped_column(default=0,nullable=False)
     description:      Mapped[str] = mapped_column(nullable=False)
+    blocking:         Mapped[bool] = mapped_column(default=False)
     created:          Mapped[datetime] = mapped_column(default=func.now())
     created_by:       Mapped[int] = mapped_column(ForeignKey('users.id'),nullable=False)
     last_modified:    Mapped[datetime] = mapped_column(default=func.now())
@@ -200,7 +201,7 @@ class TestTypes(Base):
 #################################################################
 class TestResults(Base):
     __tablename__='test_results'
-    fields='id,basic_tests_id,test_book,user_id,arch,deploy_type,status,submitted,comments'
+    fields='id,basic_tests_id,test_book,user_id,arch,deploy_type,status,submitted,adminpass,comments'
     field_list=fields.split(',')
     id:              Mapped[int] = mapped_column(primary_key=True)
     basic_tests_id:  Mapped[int] = mapped_column(ForeignKey('basic_tests.id'),nullable=False,index=True)
@@ -210,6 +211,7 @@ class TestResults(Base):
     deploy_type:     Mapped[str] = mapped_column(nullable=False,default="VM")
     status:          Mapped[str] = mapped_column(nullable=False,index=True)
     submitted:       Mapped[datetime] = mapped_column(default=func.now(),index=True)
+    adminpass:       Mapped[bool] = mapped_column(default=False)
     comments:        Mapped[str]  = mapped_column(nullable=True)
     # Note that unfortunately, sqlite won't detect unique constraint violation if any of these fields are NULL :(
     __table_args__=(UniqueConstraint('basic_tests_id','test_book','arch','deploy_type','user_id','submitted',name='uniqResults'),
@@ -570,6 +572,7 @@ class tetrarcDB:
                                      test_group_id=int(bt['test_group_id']),
                                      testorder=int(bt['testorder']),
                                      description=bt['description'],
+                                     blocking=bt['blocking'],
                                      created_by=bt['last_modified_by'],
                                      last_modified_by=bt['last_modified_by'])
                 if bt.get('link_to_procedure',None):
@@ -639,8 +642,9 @@ class tetrarcDB:
                                      arch=result['arch'],
                                      deploy_type=result['deploy_type'],
                                      status=result['status'],
+                                     adminpass=result['adminpass'],
                                      comments=result['comments'])
-                print(f"Trying to commit new dict: {newResult.toDict()}")
+                print(f"Trying to commit from {result} to new dict: {newResult.toDict()}")
                 sess.add(newResult)
                 sess.commit()
         except:
@@ -659,7 +663,6 @@ class tetrarcDB:
                       .where(TestResults.status == "pass")
                   )
             cnt=sess.scalar(stmt)
-        print(f"Found {cnt} passing tests for {book}/{arch}/test={testid}")
         return cnt
     def getTestFailCnt(self,testid:int,book:str,arch:str) -> int:
         "Search TestResults table and provide appropriate count"
@@ -674,11 +677,57 @@ class tetrarcDB:
                       .where(TestResults.status == "fail")
                   )
             cnt=sess.scalar(stmt)
-        print(f"Found {cnt} failing tests for {book}/{arch}/test={testid}")
         return cnt
-    def getTestPartialCnt(self,testid:int) -> int:
+    def getTestPartialCnt(self,testid:int,book:str,arch:str) -> int:
         "Search TestResults table and provide appropriate count"
-        return 0
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        cnt=0
+        with Session() as sess:
+            stmt= (   select(func.count(TestResults.id))
+                      .where(TestResults.test_book == book)
+                      .where(TestResults.basic_tests_id == testid)
+                      .where(TestResults.arch == arch)
+                      .where(TestResults.status == "partial")
+                  )
+            cnt=sess.scalar(stmt)
+        return cnt
+    def getTestAdminPass(self,testid:int,book:str,arch:str) -> int:
+        "Check for AdminPass flag in TestResults table"
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        cnt=0
+        with Session() as sess:
+            stmt= (   select(func.count(TestResults.id))
+                      .where(TestResults.test_book == book)
+                      .where(TestResults.basic_tests_id == testid)
+                      .where(TestResults.arch == arch)
+                      .where(TestResults.adminpass == True)
+                  )
+            cnt=sess.scalar(stmt)
+        return True if cnt > 0 else False
+    def getTestGroupAdminPassCnt(self,test_group_id:int,book:str,arch:str) -> int:
+        "Check for unique test/AdminPass flag in TestResults table"
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        cnt=0
+        with Session() as sess:
+            stmt1=(   select(BasicTests.id).where(BasicTests.test_group_id == test_group_id) )
+            # Get list of basic_tests that go with this test_group_id
+            idlist=sess.scalars(stmt1).all()
+            stmt= (   select(TestResults.test_book,
+                             TestResults.arch,
+                             TestResults.basic_tests_id,
+                             TestResults.adminpass).distinct()
+                   .where(TestResults.test_book == book)
+                   .where(TestResults.basic_tests_id.in_(idlist))
+                   .where(TestResults.arch == arch)
+                   .where(TestResults.adminpass == True)
+                   )
+                  
+            res=sess.execute(stmt).all()
+            cnt=len(res)
+        return cnt
     def getTestResults(self,testid:int,book:str,arch:str) -> list[dict]:
         "Search TestResults table and return results for given testid and Book"
         rval=[]

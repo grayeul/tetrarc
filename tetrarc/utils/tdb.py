@@ -40,6 +40,7 @@ class App:
         parser.add_argument('-testbooks', action='store_true',help='Dump info on TestBooks')
         parser.add_argument('-testgroups', action='store_true',help='Dump info on TestGroups')
         parser.add_argument('-basictests', action='store_true',help='Dump info on BasicTests')
+        parser.add_argument('-dummy1', action='store_true',help='Test routine')
 
         self.args=parser.parse_args(args)
         self.cfgfile=self.args.cfgfile
@@ -119,6 +120,9 @@ class App:
         if self.args.basictests:
             rval=self.db.getBasicTests()
             print(f"Got these TestGroups: {rval}")
+        if self.args.dummy1:
+            rval=self.db.getTestGroupAdminPassCnt(1,'RockyLinux-10.2','x86_64')
+            print(f"Got {rval} unique passes in testgroup 1")
 
 if __name__ == '__main__':
     app=App()
