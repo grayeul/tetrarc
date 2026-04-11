@@ -13,6 +13,7 @@ import json
 import bcrypt
 import uuid
 import traceback
+from operator import itemgetter
 from sqlalchemy import create_engine, ForeignKey, UniqueConstraint, func
 from sqlalchemy import Integer, Float, String, Column, Date,DateTime, JSON, CheckConstraint
 from sqlalchemy import select, update, delete
@@ -678,6 +679,20 @@ class tetrarcDB:
     def getTestPartialCnt(self,testid:int) -> int:
         "Search TestResults table and provide appropriate count"
         return 0
+    def getTestResults(self,testid:int,book:str,arch:str) -> list[dict]:
+        "Search TestResults table and return results for given testid and Book"
+        rval=[]
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        with Session() as sess:
+            stmt= (   select(TestResults)
+                      .where(TestResults.test_book == book)
+                      .where(TestResults.basic_tests_id == testid)
+                      .where(TestResults.arch == arch)
+                  )
+            dbresults=sess.scalars(stmt).all()
+            rval=[ x.toDict() for x in dbresults ]
+        return rval
     def getUserRolesById(self,user_id:int) -> list[str]:
         "Looks up a user by id, and returns a list of roles that user has"
         Session=sessionmaker()

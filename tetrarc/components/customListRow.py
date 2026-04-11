@@ -29,6 +29,8 @@ class CustomListRow(rio.Component):
         self.session.navigate_to(f"/app/admin/BasicTests/{testid}")
     def build(self) -> rio.Component:
         name=self.testdict["shortname"]
+        uim=self.session[data_models.UserInfoModel]
+        book=uim.d['book']
         try:
             testid=self.testdict["id"]
         except:
@@ -57,26 +59,45 @@ class CustomListRow(rio.Component):
                           rio.Button("Edit",
                              on_press=functools.partial(self.gotoEditResult,testid))
                           )
-        if self.hdr:
-            baserow= rio.Row(rio.Text(name,style=style),
-                          rio.Text(description,style=style)
-                          )
-        else:
-            baserow= rio.Row(rio.Text(name,style=style),
-                          rio.Markdown(description,align_x=0,min_width=40)
-                          )
         if self.editmode:
-             baserow=baserow.add(rio.Text('Edit',style=style) if self.hdr else editbtn)
-             baserow.proportions=[1,3,0.5]
+            if self.hdr:
+                baserow= rio.Row(rio.Text(name,style=style),
+                              rio.Text(description,style=style)
+                              )
+            else:
+                baserow= rio.Row(rio.Text(name,style=style),
+                              rio.Markdown(description,align_x=0,min_width=40)
+                              )
+            baserow=baserow.add(rio.Text('Edit',style=style) if self.hdr else editbtn)
+            baserow.proportions=[1,3,0.5]
         elif 'admin' in user_sess.d['roles'] or 'tester' in user_sess.d['roles']:
-             baserow=baserow.add(rio.Text(str(passes),style=style))
-             baserow=baserow.add(rio.Text(str(fails),style=style))
-             baserow=baserow.add(rio.Text('Submit New',style=style) if self.hdr else addbtn)
-             baserow.proportions=[1,3,0.5,0.5,0.5]
+            if self.hdr:
+                baserow= rio.Row(rio.Text(name,style=style),
+                              rio.Text(description,style=style)
+                              )
+            else:
+                baserow= rio.Row(
+                           rio.Link(
+                               rio.Button(name,align_x=0,style='plain-text'),
+                               f"/app/results/{book}/{testid}"),
+                              rio.Markdown(description,align_x=0,min_width=40)
+                              )
+            baserow=baserow.add(rio.Text(str(passes),style=style))
+            baserow=baserow.add(rio.Text(str(fails),style=style))
+            baserow=baserow.add(rio.Text('Submit New',style=style) if self.hdr else addbtn)
+            baserow.proportions=[1,3,0.5,0.5,0.5]
         else:
-             baserow=baserow.add(rio.Text(str(passes),style=style))
-             baserow=baserow.add(rio.Text(str(fails),style=style))
-             baserow.proportions=[1,3,1,1]
+            if self.hdr:
+                baserow= rio.Row(rio.Text(name,style=style),
+                              rio.Text(description,style=style)
+                              )
+            else:
+                baserow= rio.Row(rio.Button(name,align_x=0,style='plain-text'),
+                              rio.Markdown(description,align_x=0,min_width=40)
+                              )
+            baserow=baserow.add(rio.Text(str(passes),style=style))
+            baserow=baserow.add(rio.Text(str(fails),style=style))
+            baserow.proportions=[1,3,1,1]
              
         return rio.CustomListItem( baserow )
         
