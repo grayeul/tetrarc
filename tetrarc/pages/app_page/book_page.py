@@ -33,6 +33,18 @@ class BookPage(rio.Component):
         uim=self.session[data_models.UserInfoModel]
         self.arch=uim.d['arch']
         
+    def getHeaderCnt(self,testgroup:str) -> str:
+        """
+        Takes the name of a testgroup, and returns a string to use in the header.
+        It will look like: 'Name - pass/total'
+        """
+        pers=self.session[persistence.Persistence]
+        groupid=pers.db.getGroupId(testgroup)
+        testsForGroup=pers.db.getTestsForGroup(testgroup)
+        passcnt=pers.db.getTestGroupAdminPassCnt(groupid,self.book_name,self.arch)
+        rval=f"{testgroup}  - {passcnt}/{len(testsForGroup)}"
+        return rval
+
     def build(self) -> rio.Component:
         pers=self.session[persistence.Persistence]
         uim=self.session[data_models.UserInfoModel]
@@ -41,11 +53,12 @@ class BookPage(rio.Component):
         groups=pers.db.getTestGroups()
         colOfCards=[
               rio.Card( content=rio.Revealer(
-                                   header=x['name'],
+                                   header=self.getHeaderCnt(x['name']),
                                    content=rio.Column(
                                       #rio.Text(x['name'],style="heading2"),
                                       rio.Text(x['description'],style='text'),
-                                      rio.Column(
+                                      rio.Separator(),
+                                      rio.Card(rio.Column(
                                           comps.TestGroupList(
                                               arch=self.arch,
                                               testgroup=x['name'],
@@ -53,6 +66,7 @@ class BookPage(rio.Component):
                                               ),
                                           # Next line are args for Column
                                           margin=1,spacing=0),
+                                    color="neutral"),
                                    margin=1,spacing=0),
                                    header_style='heading2',
                                    is_open=True

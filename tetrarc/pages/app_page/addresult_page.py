@@ -13,10 +13,10 @@ from ... import data_models
 from ... import persistence
 
 @rio.page(
-    name="NewResultsPage",
-    url_segment="newresults-page/{book:path}/{testid:path}",
+    name="AddResultsPage",
+    url_segment="addresults-page/{book:path}/{testid:path}",
 )
-class NewResultsPage(rio.Component):
+class AddResultsPage(rio.Component):
     """
     A sample page, containing recent news articles about the company.
     """
@@ -26,6 +26,7 @@ class NewResultsPage(rio.Component):
     deploy_type: str='Bare Metal'
     passfail:    str='Fail'
     comments:    str=''
+    adminpass:   bool=False
 
     def onSubmitResult(self):
         uim=self.session[data_models.UserInfoModel]
@@ -43,6 +44,7 @@ class NewResultsPage(rio.Component):
                 "arch":self.arch,
                 "deploy_type":self.deploy_type,
                 "status":self.passfail.lower(),
+                "adminpass":self.adminpass,
                 "comments":self.comments}
         pers.db.addTestResult(result)
 
@@ -113,6 +115,14 @@ class NewResultsPage(rio.Component):
             row=rix,column=colix,
             )
         rix += 1
+        if 'lead' in user_sess.d['roles']:
+            formgrid.add( rio.Row(
+                             rio.Text("AdminPass",align_x=0),
+                             rio.Checkbox(is_on=self.bind().adminpass,align_x=0),
+                             rio.Spacer(),
+                             ),
+                         row=rix,column=0)
+            rix += 1
         formgrid.add( rio.MultiLineTextInput("",
                       label='comments',key="comments",
                       on_lose_focus=self.lostfocus),

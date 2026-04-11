@@ -54,6 +54,9 @@ class DetailResultsPage(rio.Component):
            pfcolor="danger"
         elif x['status']== 'partial':
             pfcolor="warning"
+        if x['adminpass']:
+            pfcolor='success'
+            x['status']='*ADMIN_PASS*'
         row1=[rio.Card(content=rio.Text(x['submitted'].strftime('%c'),margin=margin),
                          corner_radius=0,color="neutral"),
                      rio.Card(content=rio.Text(pers.db.getUserById(x['user_id'])['name'],margin=margin),

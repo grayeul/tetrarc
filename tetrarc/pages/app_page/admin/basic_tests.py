@@ -42,6 +42,7 @@ class BasicTestsPage(rio.Component):
            "testorder":1,
            "link_to_procedure":" ",
            "notes":"",
+           "blocking":False,
            "created":datetime.now(),
            "created_by":myuid,
            "last_modified":datetime.now(),
@@ -62,10 +63,9 @@ class BasicTestsPage(rio.Component):
         pers=self.session[persistence.Persistence]
         print("Cancelling in-progress edits")
         self.groupName = pers.db.getGroupById(self.curTest['test_group_id'])
-        if self.active_testid < 0:
-            self.session.navigate_to("/app/admin/BasicTests/0")
-        else:
-            self.force_refresh()
+        # When cancelling, do we want to revert changes, or just go back to 0 (refresh)?
+        self.session.navigate_to("/app/admin/BasicTests/0")
+        #self.force_refresh()
     def saveEdits(self):
         pers=self.session[persistence.Persistence]
         user_sess=self.session[dm.UserSessionModel]
@@ -132,9 +132,11 @@ class BasicTestsPage(rio.Component):
            formgrid=rio.Text("")
         else:
             print(f"In build, my curTest is: {self.curTest}")
+            #self.curTest['blocking']=False
             t_name=self.curTest['name']
             t_shortname=self.curTest['shortname']
             t_testorder=str(self.curTest['testorder'])
+            t_blocking=self.curTest['blocking']
             t_description=self.curTest['description']
             t_link=self.curTest['link_to_procedure']
             if t_link is None:
@@ -152,11 +154,17 @@ class BasicTestsPage(rio.Component):
             cx+=1
             formgrid.add(rio.MultiLineTextInput(t_description,label="description",
                     on_lose_focus=functools.partial(self.lostfocus,'description')),
-                    row=rx,column=cx,height=2)
+                    row=rx,column=cx,height=3)
             cx=0
             rx+=1
             formgrid.add(rio.TextInput(t_shortname,label="shortname",
                     on_lose_focus=functools.partial(self.lostfocus,'shortname')),
+                    row=rx,column=cx)
+            rx+=1
+            formgrid.add(rio.Row(
+                           rio.Checkbox(is_on=self.curTest['blocking']),
+                           rio.Text("Release Blocking",margin=0.5),rio.Spacer(),
+                           margin=0.5),
                     row=rx,column=cx)
             rx+=1
             formgrid.add(rio.TextInput(t_testorder,label="testorder",
@@ -214,12 +222,13 @@ class BasicTestsPage(rio.Component):
             ),
             rio.Separator(),
             rio.Spacer(min_height=1),
-            comps.TestGroupList(
+            rio.Card(comps.TestGroupList(
                 arch="x86_64",
                 editmode=True,
                 testgroup=self.groupName,
                 active_testid=self.bind().active_testid,
-                testsForGroup=pers.db.getTestsForGroup(self.groupName))
+                testsForGroup=pers.db.getTestsForGroup(self.groupName)),
+                color="neutral")
         )
 
     @rio.event.on_populate
@@ -230,6 +239,7 @@ class BasicTestsPage(rio.Component):
         # MyUserData should be available from __init__.py
         #mud=self.session[dm.MyUserData]
         uim=self.session[dm.UserInfoModel]
+        uim.d['book']=uim.d.get('book','dummy')
         pers=self.session[persistence.Persistence]
         self.testgroups = pers.db.getTestGroups()
         if uim.d.get('curgroup',None) is None:
