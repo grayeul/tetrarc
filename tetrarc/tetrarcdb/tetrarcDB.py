@@ -604,6 +604,8 @@ class tetrarcDB:
                    if xtestgrp_id: dbTest.test_group_id = xtestgrp_id
                    xtestorder=testChanges.get('testorder',None)
                    if xtestorder: dbTest.testorder = xtestorder
+                   xblocking=testChanges.get('blocking',None)
+                   if xblocking: dbTest.blocking = xblocking
                    xlastmodby=testChanges.get('last_modified_by',None)
                    if xlastmodby: dbTest.last_modified_by = xlastmodby
                    xlink=testChanges.get('link_to_procedure',None)

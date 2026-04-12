@@ -50,6 +50,14 @@ class BasicTestsPage(rio.Component):
            "test_group_id": pers.db.getGroupId(self.groupName)
         }
         self.changes=self.curTest.copy()
+        # Force a change here, to get it registered
+        self.changes['testorder'] = 0
+
+    def toggleBlocking(self,event:Event):
+        print(f"Toggling blocking: event says: {event}")
+        #self.curTest['blocking'] = event.is_on
+        self.changes['blocking'] = event.is_on
+        print(f"Changes now show: {self.changes}")
 
     def lostfocus(self,ctype:str,event:Event):
         print(f"Ctype: {ctype}, event: {event}")
@@ -75,7 +83,7 @@ class BasicTestsPage(rio.Component):
         self.changes['last_modified_by'] = user_sess.d['user_id']
         self.changes['test_group_id'] = grpid
         print("Saving in-progress edits")
-        print(f"Changes are: {self.changes}")
+        print(f"Changes for id: {self.active_testid} are: {self.changes}")
         if self.active_testid < 0:
             pers.db.addNewBasicTest(self.changes)
         else:
@@ -96,7 +104,7 @@ class BasicTestsPage(rio.Component):
         uim=self.session[dm.UserInfoModel]
         #if uim.d.get('curgroup',None):
         #    self.groupName=uim.d['curgroup']
-        self.changes={}
+        #self.changes={}
         if self.active_testid == "new":
             self.addNewTest()
         if self.active_testid == 0:
@@ -162,7 +170,7 @@ class BasicTestsPage(rio.Component):
                     row=rx,column=cx)
             rx+=1
             formgrid.add(rio.Row(
-                           rio.Checkbox(is_on=self.curTest['blocking']),
+                           rio.Checkbox(is_on=t_blocking,on_change=self.toggleBlocking),
                            rio.Text("Release Blocking",margin=0.5),rio.Spacer(),
                            margin=0.5),
                     row=rx,column=cx)
