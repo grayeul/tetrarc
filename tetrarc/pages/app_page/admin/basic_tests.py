@@ -140,7 +140,8 @@ class BasicTestsPage(rio.Component):
            formgrid=rio.Text("")
         else:
             print(f"In build, my curTest is: {self.curTest}")
-            #self.curTest['blocking']=False
+            if not hasattr(self,'changes'):
+                self.changes=self.curTest.copy()
             t_name=self.curTest['name']
             t_shortname=self.curTest['shortname']
             t_testorder=str(self.curTest['testorder'])
