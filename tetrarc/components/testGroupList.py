@@ -18,6 +18,7 @@ class TestGroupList(rio.Component):
     """
     arch: str
     testgroup: str
+    rcname: str
     editmode: bool = False
     testsForGroup: list[dict] = [{"name":"default","id":0}]
     active_testid: int = 0
@@ -37,7 +38,7 @@ class TestGroupList(rio.Component):
     def gotoAddResult(self,testid) -> None:
         uim=self.session[data_models.UserInfoModel]
         book=uim.d['book']
-        self.session.navigate_to(f"/app/addresults-page/{book}/{testid}")
+        self.session.navigate_to(f"/app/addresults-page/{book}/{self.rcname}/{testid}")
     def gotoEditResult(self,testid) -> None:
         self.session.navigate_to(f"/app/admin/BasicTests/{testid}")
     def testRow(self,test:dict) -> list[rio.Component]:
@@ -98,15 +99,15 @@ class TestGroupList(rio.Component):
                 )
         return rval
 
-    def getGrid(self,tests:list[dict],book:str,arch:str) -> rio.Component:
+    def getGrid(self,tests:list[dict],book:str,arch:str,rcname:str) -> rio.Component:
         pers=self.session[persistence.Persistence]
         uim=self.session[data_models.UserInfoModel]
         user_sess = self.session[data_models.UserSessionModel]
         # Add the passes and fails
         for test in tests:
-            passes=pers.db.getTestPassCnt(test['id'],book,arch)
-            fails=pers.db.getTestFailCnt(test['id'],book,arch)
-            adminpass=pers.db.getTestAdminPass(test['id'],book,arch)
+            passes=pers.db.getTestPassCnt(test['id'],book,arch,rcname)
+            fails=pers.db.getTestFailCnt(test['id'],book,arch,rcname)
+            adminpass=pers.db.getTestAdminPass(test['id'],book,arch,rcname)
             test['passes']=passes
             test['fails']=fails
             test['adminpass']=adminpass
@@ -171,5 +172,5 @@ class TestGroupList(rio.Component):
     def build(self) -> rio.Component:
         pers=self.session[persistence.Persistence]
         uim=self.session[data_models.UserInfoModel]
-        return self.getGrid(self.testsForGroup,uim.d['book'],self.arch)
+        return self.getGrid(self.testsForGroup,uim.d['book'],self.arch,self.rcname)
 

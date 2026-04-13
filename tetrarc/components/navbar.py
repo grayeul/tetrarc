@@ -77,8 +77,9 @@ class Navbar(rio.Component):
         try:
             uim = self.session[data_models.UserInfoModel]
             lastbook=uim.d.get('book',None)
+            lastrc=uim.d.get('rcname','base')
             if lastbook:
-                lastbookurl=f"/app/book/{lastbook}"
+                lastbookurl=f"/app/book/{lastbook}/{lastrc}"
             else:
                 lastbookurl="/app/home"
             print(f"Setting button to {lastbookurl}")

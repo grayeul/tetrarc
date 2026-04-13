@@ -23,9 +23,13 @@ class BookSum(rio.Component):
     # The status of the book
     status: str
 
+    # List of RC candidates in use
+    rcs: list[str]
+
+
     def gotoBook(self,bookname):
         "A method to navigate to the correct book page"
-        self.session.navigate_to(f"/app/book/{bookname}")
+        self.session.navigate_to(f"/app/book/{bookname}/base")
 
     def build(self) -> rio.Component:
         # Wrap everything in a card to make it stand out from the background.
@@ -39,6 +43,10 @@ class BookSum(rio.Component):
                     rio.Markdown(f"# {self.bookname}"),
                     rio.Text(
                         f" {self.description}",
+                        justify="left",
+                    ),
+                    rio.Text(
+                        f"RC List: {','.join(self.rcs)}",
                         justify="left",
                     ),
                     rio.Text(

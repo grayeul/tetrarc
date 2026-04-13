@@ -3,6 +3,7 @@
 # It uses Dynamic (Parametric) Routes
 from __future__ import annotations
 
+import functools
 from dataclasses import KW_ONLY, field
 import typing as t
 
@@ -13,19 +14,28 @@ from ... import data_models,persistence
 # Note - this shows up under URL:  app/book/book_name
 @rio.page(
     name="TestBookPage",
-    url_segment="book/{book_name:path}",
+    url_segment="book/{book_name:path}/{rcname:path}",
 )
 class BookPage(rio.Component):
     """
     A page to display the key information for a  given TestBook
     """
     book_name: str
+    rcname:    str="base"
     arch: str = "x86_64"
 
     def changeArch(self,event):
         uim=self.session[data_models.UserInfoModel]
         print(f"Changing arch to => {event}")
         uim.d['arch']=event.value
+    def changeRC(self,newrc:str):
+        uim=self.session[data_models.UserInfoModel]
+        if newrc == self.rcname:
+            # Then go back to base
+            newrc='base'
+        print(f"Changing RC to => {newrc}")
+        uim.d['rcname']=newrc
+        self.session.navigate_to(f'/app/book/{self.book_name}/{newrc}')
 
     @rio.event.on_populate
     def on_populate(self) -> None:
@@ -41,7 +51,7 @@ class BookPage(rio.Component):
         pers=self.session[persistence.Persistence]
         groupid=pers.db.getGroupId(testgroup)
         testsForGroup=pers.db.getTestsForGroup(testgroup)
-        passcnt=pers.db.getTestGroupAdminPassCnt(groupid,self.book_name,self.arch)
+        passcnt=pers.db.getTestGroupAdminPassCnt(groupid,self.book_name,self.arch,self.rcname)
         rval=f"{testgroup}  - {passcnt}/{len(testsForGroup)}"
         return rval
 
@@ -62,6 +72,7 @@ class BookPage(rio.Component):
                                           comps.TestGroupList(
                                               arch=self.arch,
                                               testgroup=x['name'],
+                                              rcname=self.rcname,
                                               testsForGroup=pers.db.getTestsForGroup(x['name'])
                                               ),
                                           # Next line are args for Column
@@ -75,8 +86,18 @@ class BookPage(rio.Component):
                        margin=0.5 )
               for x in groups ]
 
+        #rcRow=rio.Row(rio.Button("RC1"),align_x=0)
+        rcRow=rio.Row(align_x=0,margin=2)
+        for rcname in pers.db.getRCSforBook(self.book_name):
+            if rcname == self.rcname:
+                bcolor = 'secondary'
+            else:
+                bcolor = 'neutral'
+            rcRow.add(rio.Button(rcname,color=bcolor,on_press=functools.partial(self.changeRC,rcname)))
         return rio.Column(
-            rio.Text(self.book_name, style="heading1"),
+            rio.Row(rio.Text(self.book_name, style="heading1"),
+                rio.Spacer(min_width=5),
+                rcRow,align_x=0),
             rio.Text("Basic Tests to be performed", style="heading3"),
             rio.Row(
                 rio.Dropdown(label="arch",

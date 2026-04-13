@@ -41,6 +41,7 @@ class App:
         parser.add_argument('-testgroups', action='store_true',help='Dump info on TestGroups')
         parser.add_argument('-basictests', action='store_true',help='Dump info on BasicTests')
         parser.add_argument('-dummy1', action='store_true',help='Test routine')
+        parser.add_argument('-dummy2', type=str,help='Test routine')
 
         self.args=parser.parse_args(args)
         self.cfgfile=self.args.cfgfile
@@ -123,6 +124,9 @@ class App:
         if self.args.dummy1:
             rval=self.db.getTestGroupAdminPassCnt(1,'RockyLinux-10.2','x86_64')
             print(f"Got {rval} unique passes in testgroup 1")
+        if self.args.dummy2:
+            book=self.args.dummy2
+            print(f"RCs for book: {book} = {self.db.getRCSforBook(book)}")
 
 if __name__ == '__main__':
     app=App()

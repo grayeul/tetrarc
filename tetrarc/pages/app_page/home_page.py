@@ -22,7 +22,7 @@ class HomePage(rio.Component):
         pers=self.session[persistence.Persistence]
         self.log=logging.getLogger("tetrarc")
         books=pers.db.getTestBooks()
-        blist=[ comps.BookSum(x['name'],x['description'],x['status']) for x in books]
+        blist=[ comps.BookSum(x['name'],x['description'],x['status'],x['rcs']) for x in books]
 
         return rio.Column(
             rio.Markdown(

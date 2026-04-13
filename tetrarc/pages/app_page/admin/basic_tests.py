@@ -102,6 +102,7 @@ class BasicTestsPage(rio.Component):
     def build(self) -> rio.Component:
         pers=self.session[persistence.Persistence]
         uim=self.session[dm.UserInfoModel]
+        uim.d['rcname']=uim.d.get('rcname','base')
         #if uim.d.get('curgroup',None):
         #    self.groupName=uim.d['curgroup']
         #self.changes={}
@@ -233,8 +234,9 @@ class BasicTestsPage(rio.Component):
             rio.Spacer(min_height=1),
             rio.Card(comps.TestGroupList(
                 arch="x86_64",
-                editmode=True,
                 testgroup=self.groupName,
+                rcname=uim.d['rcname'],
+                editmode=True,
                 active_testid=self.bind().active_testid,
                 testsForGroup=pers.db.getTestsForGroup(self.groupName)),
                 color="neutral")
@@ -249,6 +251,7 @@ class BasicTestsPage(rio.Component):
         #mud=self.session[dm.MyUserData]
         uim=self.session[dm.UserInfoModel]
         uim.d['book']=uim.d.get('book','dummy')
+        uim.d['rcname']=uim.d.get('rcname','base')
         pers=self.session[persistence.Persistence]
         self.testgroups = pers.db.getTestGroups()
         if uim.d.get('curgroup',None) is None:

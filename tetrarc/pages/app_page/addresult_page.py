@@ -14,7 +14,7 @@ from ... import persistence
 
 @rio.page(
     name="AddResultsPage",
-    url_segment="addresults-page/{book:path}/{testid:path}",
+    url_segment="addresults-page/{book:path}/{rcname:path}/{testid:path}",
 )
 class AddResultsPage(rio.Component):
     """
@@ -23,6 +23,7 @@ class AddResultsPage(rio.Component):
     testid: int
     book:   str
     arch:   str='x86_64'   # I think this will be default, until there is a session?
+    rcname: str='base'
     deploy_type: str='Bare Metal'
     passfail:    str='Fail'
     comments:    str=''
@@ -42,16 +43,17 @@ class AddResultsPage(rio.Component):
                 "book":self.book,
                 "user_id":uid,
                 "arch":self.arch,
+                "rcname":self.rcname,
                 "deploy_type":self.deploy_type,
                 "status":self.passfail.lower(),
                 "adminpass":self.adminpass,
                 "comments":self.comments}
         pers.db.addTestResult(result)
 
-        print(f"Now navigating to: /app/book/{self.book}")
-        self.session.navigate_to(f"/app/book/{self.book}")
+        print(f"Now navigating to: /app/book/{self.book}/{self.rcname}")
+        self.session.navigate_to(f"/app/book/{self.book}/{self.rcname}")
     def onCancel(self):
-        self.session.navigate_to(f"/app/book/{self.book}")
+        self.session.navigate_to(f"/app/book/{self.book}/{self.rcname}")
     def lostfocus(self,event):
         print(f"LostFocus: {event}")
         self.comments=event.text
@@ -135,9 +137,13 @@ class AddResultsPage(rio.Component):
                          grow_x=True
                          ),
                       row=rix,column=colix)
-
+        if self.rcname == 'base':
+            rcinfo=''
+        else:
+            rcinfo=f' - {self.rcname}'
         return rio.Column(
-            rio.Text(f"Add New Result - for test: {basictest['name']}", style="heading1",overflow="wrap"),
+            rio.Text(f"Add New Result - for {self.book}{rcinfo}",style='heading1'),
+            rio.Text(f"   test: {basictest['name']}", style="heading2",overflow="wrap"),
             rio.Text("Test Description",style="heading3"),
             rio.Text(f"    {basictest['description']}" ,style="text",overflow="wrap"),
             rio.Separator(),

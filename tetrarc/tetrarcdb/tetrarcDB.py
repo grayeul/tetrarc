@@ -19,6 +19,7 @@ from sqlalchemy import Integer, Float, String, Boolean, Column, Date,DateTime, J
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import Mapped, relationship, DeclarativeBase, mapped_column
 from sqlalchemy import __version__ as sqlalchemyVers
+from sqlalchemy.ext.mutable import MutableList
 if sqlalchemyVers[0] != '2':
     print("This code requires sqlalchemy v2 or greater")
     raise SystemExit
@@ -201,11 +202,12 @@ class TestTypes(Base):
 #################################################################
 class TestResults(Base):
     __tablename__='test_results'
-    fields='id,basic_tests_id,test_book,user_id,arch,deploy_type,status,submitted,adminpass,comments'
+    fields='id,basic_tests_id,test_book,rcname,user_id,arch,deploy_type,status,submitted,adminpass,comments'
     field_list=fields.split(',')
     id:              Mapped[int] = mapped_column(primary_key=True)
     basic_tests_id:  Mapped[int] = mapped_column(ForeignKey('basic_tests.id'),nullable=False,index=True)
     test_book:       Mapped[str] = mapped_column(nullable=False,index=True)
+    rcname:          Mapped[str] = mapped_column(default='base',index=True)
     user_id:         Mapped[int] = mapped_column(ForeignKey('users.id'),nullable=False,index=True)
     arch:            Mapped[str] = mapped_column(nullable=False,index=True)
     deploy_type:     Mapped[str] = mapped_column(nullable=False,default="VM")
@@ -229,7 +231,7 @@ class TestResults(Base):
 class TestBooks(Base):
     __tablename__='test_books'
     __table_args__=(UniqueConstraint('name',name='uniqName'),)
-    fields='id,name,start_date,target_end_date,status,description'
+    fields='id,name,start_date,target_end_date,status,description,rcs'
     field_list=fields.split(',')
     id:              Mapped[int] = mapped_column(primary_key=True)
     name:            Mapped[str] = mapped_column(nullable=False,index=True)
@@ -237,6 +239,7 @@ class TestBooks(Base):
     target_end_date: Mapped[datetime] = mapped_column(nullable=True)
     status:          Mapped[str] = mapped_column(nullable=False)
     description:     Mapped[str] = mapped_column(nullable=False)
+    rcs:             Mapped[list[str]] = mapped_column(MutableList.as_mutable(JSON),default=[])
     def merge_from(self,other):
         for k in self.field_list:
            setattr(self,k,getattr(other,k))
@@ -492,6 +495,15 @@ class tetrarcDB:
         return rval
     def getTestBooks(self) -> list[str]:
         return self.getAllTableEntries('TestBooks',orderby='name')
+    def getRCSforBook(self,book) -> list[str]:
+        Session=sessionmaker()
+        Session.configure(bind=self.engine)
+        rval=[]
+        with Session() as sess:
+            stmt=select(TestBooks.rcs).where(TestBooks.name == book)
+            rval=sess.scalars(stmt).first()
+        return rval
+        
     def getTestGroups(self) -> list[str]:
         return self.getAllTableEntries('TestGroups',orderby='num')
     def getBasicTests(self) -> list[str]:
@@ -642,6 +654,7 @@ class tetrarcDB:
                                      user_id=result['user_id'],
                                      test_book=result['book'],
                                      arch=result['arch'],
+                                     rcname=result['rcname'],
                                      deploy_type=result['deploy_type'],
                                      status=result['status'],
                                      adminpass=result['adminpass'],
@@ -652,7 +665,7 @@ class tetrarcDB:
         except:
            self.log.exception("Got exception in addTestResult ",exc_info=True)
 
-    def getTestPassCnt(self,testid:int,book:str,arch:str) -> int:
+    def getTestPassCnt(self,testid:int,book:str,arch:str,rcname:str = 'base') -> int:
         "Search TestResults table and provide appropriate count"
         Session=sessionmaker()
         Session.configure(bind=self.engine)
@@ -662,11 +675,12 @@ class tetrarcDB:
                       .where(TestResults.test_book == book)
                       .where(TestResults.basic_tests_id == testid)
                       .where(TestResults.arch == arch)
+                      .where(TestResults.rcname == rcname)
                       .where(TestResults.status == "pass")
                   )
             cnt=sess.scalar(stmt)
         return cnt
-    def getTestFailCnt(self,testid:int,book:str,arch:str) -> int:
+    def getTestFailCnt(self,testid:int,book:str,arch:str,rcname:str = 'base') -> int:
         "Search TestResults table and provide appropriate count"
         Session=sessionmaker()
         Session.configure(bind=self.engine)
@@ -676,11 +690,12 @@ class tetrarcDB:
                       .where(TestResults.test_book == book)
                       .where(TestResults.basic_tests_id == testid)
                       .where(TestResults.arch == arch)
+                      .where(TestResults.rcname == rcname)
                       .where(TestResults.status == "fail")
                   )
             cnt=sess.scalar(stmt)
         return cnt
-    def getTestPartialCnt(self,testid:int,book:str,arch:str) -> int:
+    def getTestPartialCnt(self,testid:int,book:str,arch:str,rcname:str = 'base') -> int:
         "Search TestResults table and provide appropriate count"
         Session=sessionmaker()
         Session.configure(bind=self.engine)
@@ -690,11 +705,12 @@ class tetrarcDB:
                       .where(TestResults.test_book == book)
                       .where(TestResults.basic_tests_id == testid)
                       .where(TestResults.arch == arch)
+                      .where(TestResults.rcname == rcname)
                       .where(TestResults.status == "partial")
                   )
             cnt=sess.scalar(stmt)
         return cnt
-    def getTestAdminPass(self,testid:int,book:str,arch:str) -> int:
+    def getTestAdminPass(self,testid:int,book:str,arch:str,rcname:str = 'base') -> int:
         "Check for AdminPass flag in TestResults table"
         Session=sessionmaker()
         Session.configure(bind=self.engine)
@@ -704,11 +720,12 @@ class tetrarcDB:
                       .where(TestResults.test_book == book)
                       .where(TestResults.basic_tests_id == testid)
                       .where(TestResults.arch == arch)
+                      .where(TestResults.rcname == rcname)
                       .where(TestResults.adminpass == True)
                   )
             cnt=sess.scalar(stmt)
         return True if cnt > 0 else False
-    def getTestGroupAdminPassCnt(self,test_group_id:int,book:str,arch:str) -> int:
+    def getTestGroupAdminPassCnt(self,test_group_id:int,book:str,arch:str,rcname:str = 'base') -> int:
         "Check for unique test/AdminPass flag in TestResults table"
         Session=sessionmaker()
         Session.configure(bind=self.engine)
@@ -719,18 +736,20 @@ class tetrarcDB:
             idlist=sess.scalars(stmt1).all()
             stmt= (   select(TestResults.test_book,
                              TestResults.arch,
+                             TestResults.rcname,
                              TestResults.basic_tests_id,
                              TestResults.adminpass).distinct()
                    .where(TestResults.test_book == book)
                    .where(TestResults.basic_tests_id.in_(idlist))
                    .where(TestResults.arch == arch)
+                   .where(TestResults.rcname == rcname)
                    .where(TestResults.adminpass == True)
                    )
                   
             res=sess.execute(stmt).all()
             cnt=len(res)
         return cnt
-    def getTestResults(self,testid:int,book:str,arch:str) -> list[dict]:
+    def getTestResults(self,testid:int,book:str,arch:str,rcname:str = 'base') -> list[dict]:
         "Search TestResults table and return results for given testid and Book"
         rval=[]
         Session=sessionmaker()
@@ -740,6 +759,7 @@ class tetrarcDB:
                       .where(TestResults.test_book == book)
                       .where(TestResults.basic_tests_id == testid)
                       .where(TestResults.arch == arch)
+                      .where(TestResults.rcname == rcname)
                   )
             dbresults=sess.scalars(stmt).all()
             rval=[ x.toDict() for x in dbresults ]
