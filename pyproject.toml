@@ -1,6 +1,6 @@
 [project]
 name = "tetrarc"
-version = "0.7.0"
+version = "0.7.1"
 description = "A Web App for TEst TRAcking of Rocky Candidates"
 authors = [ {name = "grayeul", email = "grayeul@gmail.com"} ]
 readme = "README.md"
