@@ -60,6 +60,7 @@ class LoginPage(rio.Component):
             # Inform the user that something is happening
             self._currently_logging_in = True
             self.force_refresh()
+            cip = self.session.http_headers.get('x-real-ip','UnavailableProxy')
 
             #  Try to find a user with this name
             pers = self.session[persistence.Persistence]
@@ -70,7 +71,6 @@ class LoginPage(rio.Component):
                 )
             except KeyError:
                 self.error_message = "Invalid username. Please try again or create a new account."
-                cip = self.session.client_ip
                 logging.getLogger("userlogs").warning(f"Attempt to sign in from {cip} as unknown user: {self.username}")
                 return
 
@@ -89,12 +89,12 @@ class LoginPage(rio.Component):
             self.log.debug(f"Now userinfo: {user_info_d}")
             if user_info_d['pending_approval']:
                  # We are still waiting for approval:
-                 logging.getLogger("userlogs").warning(f"Attempt {self.username} from {self.session.client_ip} - still pending approval")
+                 logging.getLogger("userlogs").warning(f"Attempt {self.username} from {cip} - still pending approval")
                  self.session.navigate_to("/pending")
                  return
             # The login was successful
             self.error_message = ""
-            logging.getLogger("userlogs").info(f"Successful login: {self.username} from {self.session.client_ip}")
+            logging.getLogger("userlogs").info(f"Successful login: {self.username} from {cip}")
 
             # Clean out any old sessions
             await pers.clear_user_sessions(user_info_d['id'])
