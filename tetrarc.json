@@ -1,5 +1,6 @@
 {
    "dbfile":"tetrarc.db",
+   "logging_cfg_file":"tetrarc.logging.cfg",
    "loglevel":"DEBUG",
    "dbpagesize":50,
    "pagesize":10
