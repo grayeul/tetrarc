@@ -126,7 +126,8 @@ class App:
             print(f"Got {rval} unique passes in testgroup 1")
         if self.args.dummy2:
             book=self.args.dummy2
-            print(f"RCs for book: {book} = {self.db.getRCSforBook(book)}")
+            #print(f"RCs for book: {book} = {self.db.getRCSforBook(book)}")
+            print(f"UserSess: {self.db.getUserSessionByAuthToken(book)}")
 
 if __name__ == '__main__':
     app=App()

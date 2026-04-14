@@ -5,6 +5,7 @@ import sys
 import typing as t
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import json
 import logging
 
 import rio
@@ -15,19 +16,21 @@ from . import data_models, persistence, theme
 
 
 async def on_app_start(app: rio.App) -> None:
-    # Initialize logging
-    logging.basicConfig(level=logging.DEBUG,
-        format='%(asctime)s %(message)s',
-        datefmt="%H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)])
-    app.log = logging.getLogger('tetrarc')
 
     # Create a persistence instance. This class hides the gritty details of
     # database interaction from the app.
 
     # This is wonky -- but not sure of a better way just yet to get info
-    appcfg=app.default_attachments[0].cfg
-    app.name=appcfg.get('orgname','tetrarc') # Default to just tetrarc
+    appcfg = app.default_attachments[0].cfg
+    app.name = appcfg.get('orgname','tetrarc') # Default to just tetrarc
+
+    # Initialize logging
+    logcfgfile = appcfg.get('logging_cfg_file')
+    logcfg = {}
+    with open(logcfgfile,'r') as fp:
+        logcfg = json.load(fp)
+    logging.config.dictConfig(logcfg)
+    app.log = logging.getLogger('tetrarc')
     pers = persistence.Persistence(appcfg)
 
     # Now attach it to the session. This way, the persistence instance is
@@ -63,7 +66,7 @@ async def on_session_start(rio_session: rio.Session) -> None:
     # A session was found. Welcome back!
     else:
         # Make sure the session is still valid
-        logging.info(f"UserSession: {user_session.d}")
+        #logging.info(f"UserSession: {user_session.d}")
         if user_session.d['valid_until'] > datetime.now(tz=timezone.utc):
             # Attach the session. This way any component that wishes to access
             # information about the user can do so.

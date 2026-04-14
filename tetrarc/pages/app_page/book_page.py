@@ -6,6 +6,7 @@ from __future__ import annotations
 import functools
 from dataclasses import KW_ONLY, field
 import typing as t
+import logging
 
 import rio
 
@@ -26,14 +27,14 @@ class BookPage(rio.Component):
 
     def changeArch(self,event):
         uim=self.session[data_models.UserInfoModel]
-        print(f"Changing arch to => {event}")
+        #print(f"Changing arch to => {event}")
         uim.d['arch']=event.value
     def changeRC(self,newrc:str):
         uim=self.session[data_models.UserInfoModel]
         if newrc == self.rcname:
             # Then go back to base
             newrc='base'
-        print(f"Changing RC to => {newrc}")
+        #print(f"Changing RC to => {newrc}")
         uim.d['rcname']=newrc
         self.session.navigate_to(f'/app/book/{self.book_name}/{newrc}')
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import KW_ONLY, field
 from datetime import datetime
 import typing as t
+import logging
 import functools
 
 import rio
@@ -33,7 +34,7 @@ class BasicTestsPage(rio.Component):
         pers=self.session[persistence.Persistence]
         user_sess=self.session[dm.UserSessionModel]
         myuid=user_sess.d['user_id']
-        print(f"Adding a new test and my user_id is: {myuid}")
+        #print(f"Adding a new test and my user_id is: {myuid}")
         self.active_testid = -1
         self.curTest={
            "name":" ",
@@ -77,22 +78,27 @@ class BasicTestsPage(rio.Component):
     def saveEdits(self):
         pers=self.session[persistence.Persistence]
         user_sess=self.session[dm.UserSessionModel]
+        myuid = user_sess.d['user_id']
         grpid=pers.db.getGroupId(self.groupName)
         #self.changes=self.curTest.copy()
         self.changes['last_modified'] = datetime.now()
-        self.changes['last_modified_by'] = user_sess.d['user_id']
+        self.changes['last_modified_by'] = myuid
         self.changes['test_group_id'] = grpid
-        print("Saving in-progress edits")
-        print(f"Changes for id: {self.active_testid} are: {self.changes}")
+        #print("Saving in-progress edits")
+        #print(f"Changes for id: {self.active_testid} are: {self.changes}")
+        logging.getLogger("adminlogs").info(f"UserId: {myuid}({self.session.client_ip}) is saving test changes: {self.changes}")
         if self.active_testid < 0:
             pers.db.addNewBasicTest(self.changes)
         else:
             pers.db.updateBasicTest(self.active_testid,self.changes)
         self.session.navigate_to("/app/admin/BasicTests/0")
     def deleteTest(self):
-        print(f"Preparing to delete test id: {self.active_testid}")
+        #print(f"Preparing to delete test id: {self.active_testid}")
         pers=self.session[persistence.Persistence]
+        user_sess=self.session[dm.UserSessionModel]
+        myuid = user_sess.d['user_id']
         self.confdel_is_open = False
+        logging.getLogger("adminlogs").info("UserId: {myuid}({self.session.client_ip}) is deleting testid: {self.active_testid}")
         pers.db.deleteBasicTest(self.active_testid)
         self.session.navigate_to("/app/admin/BasicTests/0")
 
@@ -108,11 +114,6 @@ class BasicTestsPage(rio.Component):
         #self.changes={}
         if self.active_testid == "new":
             self.addNewTest()
-        if self.active_testid == 0:
-            carTest=None
-        else:
-            carTest=pers.db.getBasicTest(self.active_testid)
-            print(f"Found BasicTest{self.active_testid}: {carTest}")
         TopRow=rio.Column(
             rio.Row(
                 rio.Dropdown(label="TestGroup",
@@ -140,7 +141,7 @@ class BasicTestsPage(rio.Component):
         if self.curTest is None:
            formgrid=rio.Text("")
         else:
-            print(f"In build, my curTest is: {self.curTest}")
+            #print(f"In build, my curTest is: {self.curTest}")
             if not hasattr(self,'changes'):
                 self.changes=self.curTest.copy()
             t_name=self.curTest['name']
@@ -260,11 +261,11 @@ class BasicTestsPage(rio.Component):
             else:
                 uim.d['curgroup']='Empty'
         #sess.add(uim)
-        print(f"Now in on_populate uim.d is: {uim.d}")
-        print(f"and uim.d.get => {uim.d.get('curgroup',None)}")
+        #print(f"Now in on_populate uim.d is: {uim.d}")
+        #print(f"and uim.d.get => {uim.d.get('curgroup',None)}")
         self.testgroupNames=[x['name'] for x in self.testgroups]
-        print(f"My active_testid is: {self.active_testid}")
-        print(f"GroupNames: {self.testgroupNames}")
+        #print(f"My active_testid is: {self.active_testid}")
+        #print(f"GroupNames: {self.testgroupNames}")
         self.groupName=uim.d['curgroup']
         if self.active_testid == 0:
             self.curTest=None

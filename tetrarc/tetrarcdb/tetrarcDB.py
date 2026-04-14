@@ -78,6 +78,8 @@ class UserSessions(Base):
     user_id:    Mapped[int] = mapped_column(ForeignKey('users.id'),nullable=False)
     created:    Mapped[datetime] = mapped_column(default=func.now())
     valid_until:Mapped[datetime] = mapped_column(default=func.now())
+    # Relationship:
+    user:       Mapped["Users"] = relationship()
 
     def merge_from(self,other):
         for k in self.field_list:
@@ -86,6 +88,7 @@ class UserSessions(Base):
         rval={}
         for k in self.field_list:
             rval[k]=getattr(self,k)
+        rval['user']=self.user.toDict()
         return rval
 
 #################################################################
@@ -423,6 +426,7 @@ class tetrarcDB:
             try:
                 sess.commit()
                 rval=user_sess.toDict()
+                print(f"Have created a new user_session: {rval}")
             except:
                 self.log.exception("Exception creating new session")
         return rval
@@ -555,7 +559,7 @@ class tetrarcDB:
         tgid=self.getGroupId(testgroup)
         Session=sessionmaker()
         Session.configure(bind=self.engine)
-        self.log.info(f"Retrieving tests for group {testgroup}")
+        #self.log.info(f"Retrieving tests for group {testgroup}")
         with Session() as sess:
             statement = select(BasicTests).order_by(BasicTests.testorder).filter_by(test_group_id=tgid)
             s1 = sess.scalars(statement).all()

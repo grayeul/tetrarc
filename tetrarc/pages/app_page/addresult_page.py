@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import KW_ONLY, field
 import typing as t
+import logging
 
 import rio
 
@@ -18,7 +19,7 @@ from ... import persistence
 )
 class AddResultsPage(rio.Component):
     """
-    A sample page, containing recent news articles about the company.
+    A page used to add new test results to the DB
     """
     testid: int
     book:   str
@@ -34,11 +35,12 @@ class AddResultsPage(rio.Component):
         pers=self.session[persistence.Persistence]
 
         print(f"Submitting new {self.book} result for test: {self.testid}")
-        print(f"For arch: {self.arch} on {self.deploy_type}")
-        print(f"Pass/Fail: {self.passfail}")
-        print(f"Comments: {self.comments}")
+        #print(f"For arch: {self.arch} on {self.deploy_type}")
+        #print(f"Pass/Fail: {self.passfail}")
+        #print(f"Comments: {self.comments}")
         user_sess=self.session[data_models.UserSessionModel]
         uid=user_sess.d['user_id']
+        username=user_sess.d['user']['username']
         result={"basic_tests_id":self.testid,
                 "book":self.book,
                 "user_id":uid,
@@ -48,23 +50,25 @@ class AddResultsPage(rio.Component):
                 "status":self.passfail.lower(),
                 "adminpass":self.adminpass,
                 "comments":self.comments}
+
+        self.log.info(f"UserId: {uid}({username}) now submitting result: {result}")
         pers.db.addTestResult(result)
 
-        print(f"Now navigating to: /app/book/{self.book}/{self.rcname}")
+        #print(f"Now navigating to: /app/book/{self.book}/{self.rcname}")
         self.session.navigate_to(f"/app/book/{self.book}/{self.rcname}")
     def onCancel(self):
         self.session.navigate_to(f"/app/book/{self.book}/{self.rcname}")
     def lostfocus(self,event):
-        print(f"LostFocus: {event}")
+        #print(f"LostFocus: {event}")
         self.comments=event.text
     def changeDeployType(self,event):
         uim=self.session[data_models.UserInfoModel]
-        print(f"Changing arch to => {event}")
+        #print(f"Changing arch to => {event}")
         uim.d['deploy_type']=event.value
         self.deploy_type=uim.d['deploy_type']
     def changeArch(self,event):
         uim=self.session[data_models.UserInfoModel]
-        print(f"Changing arch to => {event}")
+        #print(f"Changing arch to => {event}")
         uim.d['arch']=event.value
         self.arch=uim.d['arch']
 
@@ -82,7 +86,7 @@ class AddResultsPage(rio.Component):
         basictest=pers.db.getBasicTestById(self.testid)
         user_sess = self.session[data_models.UserSessionModel]
         userid=user_sess.d["user_id"]
-        self.log.info(f"The user_sess dict is: {user_sess.d}")
+        #self.log.info(f"The user_sess dict is: {user_sess.d}")
         user=pers.db.getUserById(userid)
         username=user['username']
         # Create a Grid to hold all of the formdata

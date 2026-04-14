@@ -27,7 +27,6 @@ class TestGroupList(rio.Component):
 
     def changeArch(self,event):
         uim=self.session[data_models.UserInfoModel]
-        print(f"Changing arch to => {event}")
         uim.d['arch']=event.value
     def changeSort(self,sortkey:str):
         if self.sortkey == sortkey:
@@ -50,7 +49,7 @@ class TestGroupList(rio.Component):
             testid=test["id"]
         except:
             testid=0
-            print(f"Building a row, with testdict={self.testdict} edit={self.editmode}")
+            #print(f"Building a row, with testdict={self.testdict} edit={self.editmode}")
         description=test["description"]
         user_sess = self.session[data_models.UserSessionModel]
         passes=test.get("passes",0)
@@ -162,7 +161,6 @@ class TestGroupList(rio.Component):
 
         # Now build up each test row
         sortedtests= sorted(tests,key=itemgetter(self.sortkey),reverse=self.orderDesc)
-        print(f"Sorting by {self.sortkey} desc: {self.orderDesc}")
         maintests=[self.testRow(x) for x in sortedtests]
         margin=0.3
         testGridContents.extend(maintests)

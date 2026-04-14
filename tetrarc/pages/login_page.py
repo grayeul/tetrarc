@@ -70,6 +70,8 @@ class LoginPage(rio.Component):
                 )
             except KeyError:
                 self.error_message = "Invalid username. Please try again or create a new account."
+                cip = self.session.client_ip
+                logging.getLogger("userlogs").warning(f"Attempt to sign in from {cip} as unknown user: {self.username}")
                 return
 
             user_info_d=user_info.d
@@ -81,15 +83,18 @@ class LoginPage(rio.Component):
                 user_info_d['password'] = user_info_d['password'].encode('utf-8')
             if not bcrypt.checkpw(self.password.encode('utf-8'),user_info_d['password']):
                 self.error_message = "Invalid password. Please try again or create a new account."
+                logging.getLogger("userlogs").warning(f"Attempt to sign in from {cip} as {self.username} with bad password")
                 return
                 
             self.log.debug(f"Now userinfo: {user_info_d}")
             if user_info_d['pending_approval']:
                  # We are still waiting for approval:
+                 logging.getLogger("userlogs").warning(f"Attempt {self.username} from {self.session.client_ip} - still pending approval")
                  self.session.navigate_to("/pending")
                  return
             # The login was successful
             self.error_message = ""
+            logging.getLogger("userlogs").info(f"Successful login: {self.username} from {self.session.client_ip}")
 
             # Clean out any old sessions
             await pers.clear_user_sessions(user_info_d['id'])
