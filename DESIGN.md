@@ -5,15 +5,15 @@ This is based largely on looking at example web pages from 'OnBelay' -- here: ht
 I am thinking about doing a Rio based web-paged, with info managed via a database.
 Here are some thoughts on the database layout/table info
 
-BasicTests:   (basic definition of tests that could be run)
-  name
-  shortname
-  testgroup
-  testorder (for sorting within group)
-  description
-  last_updated
-  link_to_procedure
-  last_modified_by
+* BasicTests:   (basic definition of tests that could be run)
+**  name
+**  shortname
+**  testgroup
+**  testorder (for sorting within group)
+**  description
+**  last_updated
+**  link_to_procedure
+**  last_modified_by
 
 TestEvents:  (instances of tests to-be-run, or have-been-run)
   basicTest
