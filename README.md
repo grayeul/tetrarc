@@ -1,6 +1,12 @@
 # tetrarc
 TEst TRAcking for Rocky Candidates
 
+# NOTE
+## This application has moved to https://git.resf.org/testing/testrarc
+
+As of 17 Apr 2026 - No further development will occur here....
+
+============================================================================
 This is a web-based GUI/Application based utilizing the Rio web development environment
 (https://rio.dev).  It is imagined as a potential replacement for Mattermost Playbooks,
 which has been used for tracking our testing of Rocky Candidate Releases for a while.
